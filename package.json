@@ -1,0 +1,22 @@
+{
+  "name": "software",
+  "version": "1.0.0",
+  "description": "Software Project \r Team members:\r Osama Elayashy\r Mostafa Mohammed \r Yahia Khodeir",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OsamaElayashy/Software.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/OsamaElayashy/Software/issues"
+  },
+  "homepage": "https://github.com/OsamaElayashy/Software#readme",
+  "dependencies": {
+    "mongoose": "^8.12.1"
+  }
+}
