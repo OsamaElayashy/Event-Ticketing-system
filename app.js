@@ -1,5 +1,4 @@
 
-
 const express = require("express");
 const mongoose = require("mongoose");
 const cookieParser=require('cookie-parser')
@@ -31,7 +30,7 @@ app.use(
 
 
 app.use("/api/v1", authRouter);
-
+n
 app.use(authenticationMiddleware);
 
 
