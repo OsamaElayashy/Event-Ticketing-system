@@ -3,16 +3,21 @@ const router = express.Router();
 const eventsController = require('../controllers/eventsController');
 const { isOrganizer, isAdmin } = require('../middleware/auth');
 
-// Anyone can view
-router.get('/', eventsController.getAllEvents);
 
-// Organizer routes
-router.post('/', isOrganizer, eventsController.createEvent);
-router.put('/:id', isOrganizer, eventsController.updateEvent);
-router.delete('/:id', isOrganizer, eventsController.deleteEvent);
-router.get('/analytics', isOrganizer, eventsController.getEventAnalytics);
+router.get("/", authorizationMiddleware(["StandardUser" , "Organizer" , "Admin"]),eventController.getAllEvents);
 
-// Admin routes
-router.patch('/:id/status', isAdmin, eventsController.updateEventStatus);
+// Only organizers can post events
+router.post("/", authorizationMiddleware(["Organizer"]), eventController.createEvent);
+
+// Only organizers can edit event details (number of tickets, date, and location)
+router.put("/:id", authorizationMiddleware(["Organizer"]), eventController.updateEvent);
+
+// Only organizers can delete events
+router.delete("/:id", authorizationMiddleware(["Organizer"]), eventController.deleteEvent);
+
+router.get("/:id", authorizationMiddleware(["Organizer"]),eventController.getEventAnalytics);
+
+router.put("/:id", authorizationMiddleware(["Admin"]), eventController.updateEventStatus);
+
 
 module.exports = router;

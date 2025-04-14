@@ -48,7 +48,7 @@ exports.updateEventStatus = async (req, res) => {
   const event = await Event.findById(req.params.id);
   if (!event) return res.status(404).json({ message: 'Event not found' });
 
-  event.status = req.body.status; // approved, pending, declined
+  event.status = req.body.status; 
   await event.save();
   res.json(event);
 };
