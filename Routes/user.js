@@ -1,7 +1,6 @@
 const express = require("express");
 const userController = require("../Controllers/userController");
-const authorizationMiddleware=require('../middleware/authorizationMiddleware');
-const courseController = require("../Controllers/courseController");
+const authorizationMiddleware=require('../Middleware/authorizationMiddleware');
 const router = express.Router();
 
 // * Get all users
@@ -22,15 +21,5 @@ router.put("/:id",authorizationMiddleware(['admin','student']),userController.up
 
 // * Delete a user
 router.delete("/:id",authorizationMiddleware(['admin']),userController.deleteUser);
-
-
-// * Get courses of specific student
-router.get("/:studentId/courses",  authorizationMiddleware(['admin','student']),courseController.getStudntCourses);
-
-//* add course
-router.put("/:studentId/courses/add/:courseId", authorizationMiddleware(['admin']), courseController.addStudentCourse);
-
-//* remove course
-router.put("/:studentId/courses/remove/:courseId",  authorizationMiddleware(['admin']), courseController.dropStudentCourse);
 
 module.exports = router; // ! Don't forget to export the router

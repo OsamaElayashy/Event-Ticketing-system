@@ -4,6 +4,7 @@
   "description": "Software Project \r Team members:\r Osama Elayashy\r Mostafa Mohammed \r Yahia Khodeir",
   "main": "index.js",
   "scripts": {
+    "start": "nodemon app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -23,6 +24,7 @@
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.12.1"
+    "mongoose": "^8.12.1",
+    "nodemon": "^3.1.9"
   }
 }
