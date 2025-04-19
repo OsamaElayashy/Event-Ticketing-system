@@ -1,54 +1,45 @@
-const Event = require('../models/Event');
+const eventmodel= require("../Models/Event.js")
 
-exports.getAllEvents = async (req, res) => {
-  const events = await Event.find({ status: 'approved' });
-  res.json(events);
-};
+const eventController={
+    getallevents: async(req,res)=>{
+        try {
+        const event = await eventmodel.find();
+        return res.status(200).json(event);
+      } catch (e) {
+        return res.status(500).json({ message: e.message });
+      }
+    },
+    
+    getEvent: async (req, res) => {
+        try {
+          const event = await eventmodel.findById(req.params.id);
+          return res.status(200).json(event);
+        } catch (error) {
+          return res.status(500).json({ message: error.message });
+        }
+      },
+      createEvent: async (req, res) => {
+        const event = new eventmodel({
+          title: req.body.title,
+          description: req.body.description,
+          Date: req.body.Date,
+          location: req.body.location,
+          category: req.body.category,
+          image: req.body.image,
+          ticketPrice: req.body.ticketPrice,
+          totaltickets: req.body.totaltickets,
+          Organizer: req.body.Organizer,
+          status: req.body.status
+        });
+        try {
+          const newevent = await event.save();
+          return res.status(201).json(newcourse);
+        } catch (e) {
+          return res.status(400).json({ message: e.message });
+        }
+      },
+      
 
-exports.createEvent = async (req, res) => {
-  const { name, tickets, date, location } = req.body;
-  const event = new Event({
-    name,
-    tickets,
-    date,
-    location,
-    organizer: req.user.id,
-    status: 'pending',
-  });
-  await event.save();
-  res.status(201).json(event);
-};
+    }
 
-exports.updateEvent = async (req, res) => {
-  const event = await Event.findOne({ _id: req.params.id, organizer: req.user.id });
-  if (!event) return res.status(404).json({ message: 'Event not found or unauthorized' });
 
-  Object.assign(event, req.body);
-  await event.save();
-  res.json(event);
-};
-
-exports.deleteEvent = async (req, res) => {
-  const event = await Event.findOneAndDelete({ _id: req.params.id, organizer: req.user.id });
-  if (!event) return res.status(404).json({ message: 'Event not found or unauthorized' });
-
-  res.json({ message: 'Event deleted' });
-};
-
-exports.getEventAnalytics = async (req, res) => {
-  const events = await Event.find({ organizer: req.user.id });
-  const analytics = events.map(event => ({
-    name: event.name,
-    percentageBooked: (event.ticketsBooked / event.tickets) * 100
-  }));
-  res.json(analytics);
-};
-
-exports.updateEventStatus = async (req, res) => {
-  const event = await Event.findById(req.params.id);
-  if (!event) return res.status(404).json({ message: 'Event not found' });
-
-  event.status = req.body.status; 
-  await event.save();
-  res.json(event);
-};
