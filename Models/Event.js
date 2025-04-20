@@ -36,7 +36,7 @@ const EventSchema = new mongoose.Schema( {
     remainingTickets: {
         type: Number,
         required: true,
-        default: function () { return this.totalTickets; } 
+        default: function () { return this.totaltickets; } 
     },
     Organizer: {
         type: mongoose.Schema.Types.ObjectId, 

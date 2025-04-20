@@ -1,24 +1,25 @@
 const express = require('express');
 const router = express.Router();
 const eventsController = require('../controllers/eventsController');
-const { isOrganizer, isAdmin } = require('../middleware/auth');
+const { isAuthenticated } = require('../middleware/auth');
 
+// * Create a new event (Organizer only)
+router.post("/", isAuthenticated(["Organizer"]), eventsController.createEvent);
 
-router.get("/events", authorizationMiddleware(["StandardUser" , "Organizer" , "Admin"]),eventsController.getAllEvents);
+// * Get a list of all approved events (Public)
+router.get("/", eventsController.getApprovedEvents);
 
+// * Get a list of all events (Admin only)
+router.get("/all", isAuthenticated(["Admin"]), eventsController.getAllEvents);
 
-// Only organizers can post events
-router.post("/events", authorizationMiddleware(["Organizer"]), eventsController.createEvent);
+// * Get details of a single event (Public)
+router.get("/:id", eventsController.getEvent);
 
-// Only organizers can edit event details (number of tickets, date, and location)
-router.put("/:id", authorizationMiddleware(["Organizer"]), eventsController.updateEvent);
+// * Update an event (Organizer or Admin)
+router.put("/:id", isAuthenticated(["Organizer", "Admin"]), eventsController.updateEvent);
 
-// Only organizers can delete events
-router.delete("/:id", authorizationMiddleware(["Organizer"]), eventsController.deleteEvent);
-
-router.get("/events/analytics", authorizationMiddleware(["Organizer"]),eventsController.getEventAnalytics);
-
-router.put("/:id", authorizationMiddleware(["Admin"]), eventsController.updateEventStatus);
-
+// * Delete an event (Organizer or Admin)
+router.delete("/:id", isAuthenticated(["Organizer", "Admin"]), eventsController.deleteEvent);
 
 module.exports = router;
+
