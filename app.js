@@ -7,10 +7,12 @@ const dotenv= require('dotenv').config();
 
 const app = express();
 
+const eventsRouter = require('./Routes/event');
 const userRouter = require("./Routes/user");
 const authRouter = require("./Routes/auth");
 const authenticationMiddleware=require('./middleware/authenticationMiddleware')
 
+app.use('/events', eventsRouter);
 app.use(authenticationMiddleware);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
