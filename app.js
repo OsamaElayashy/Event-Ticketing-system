@@ -7,9 +7,9 @@ const dotenv= require('dotenv').config();
 
 const app = express();
 
-const eventsRouter = require('./Routes/event');
+const eventsRouter = require('./Routes/event.js');
 const userRouter = require("./Routes/user");
-const authRouter = require("./Routes/auth");
+const authRouter = require("./Routes/auth.js");
 const authenticationMiddleware=require('./middleware/authenticationMiddleware')
 
 app.use('/events', eventsRouter);
@@ -57,5 +57,11 @@ app.use(function (req, res, next) {
 });
 app.listen(process.env.PORT||4000, () => console.log("server started"));
 
-app.use('/api/events', require('./routes/events'));
-app.use('/api/bookings', require('./routes/bookings'));
+const auth = require('./Routes/auth.js');
+app.use('/api/v1', auth);
+const event = require('./Routes/event.js');
+app.use('/api/v1', event);
+const booking = require('./Routes/booking.js');
+app.use('/api/v1', booking);
+const user = require('./Routes/user.js');
+app.use('/api/v1', user);
