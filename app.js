@@ -1,19 +1,19 @@
 
-
 const express = require("express");
 const mongoose = require("mongoose");
 const cookieParser=require('cookie-parser')
 const cors = require("cors");
+const dotenv= require('dotenv').config();
 
 const app = express();
 
-const courseRouter = require("./Routes/course");
+const eventsRouter = require('./Routes/event.js');
 const userRouter = require("./Routes/user");
-const authRouter = require("./Routes/auth");
+const authRouter = require("./Routes/auth.js");
 const authenticationMiddleware=require('./middleware/authenticationMiddleware')
 
-require('dotenv').config();
-
+app.use('/events', eventsRouter);
+app.use(authenticationMiddleware);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -32,13 +32,10 @@ app.use(
 
 app.use("/api/v1", authRouter);
 
-app.use(authenticationMiddleware);
 
-
-app.use("/api/v1/courses", courseRouter);
 app.use("/api/v1/users", userRouter);
 
-const db_name = process.env.DB_NAME;
+const db_name = dotenv.DB_NAME;
 // * Cloud Connection
 // const db_url = `mongodb+srv://TestUser:TestPassword@cluster0.lfqod.mongodb.net/${db_name}?retryWrites=true&w=majority`;
 // * Local connection
@@ -58,4 +55,13 @@ mongoose
 app.use(function (req, res, next) {
   return res.status(404).send("404");
 });
-app.listen(process.env.PORT, () => console.log("server started"));
+app.listen(process.env.PORT||4000, () => console.log("server started"));
+
+const auth = require('./Routes/auth.js');
+app.use('/api/v1', auth);
+const event = require('./Routes/event.js');
+app.use('/api/v1', event);
+const booking = require('./Routes/booking.js');
+app.use('/api/v1', booking);
+const user = require('./Routes/user.js');
+app.use('/api/v1', user);

@@ -1,36 +1,44 @@
 const express = require("express");
 const userController = require("../Controllers/userController");
-const authorizationMiddleware=require('../middleware/authorizationMiddleware');
-const courseController = require("../Controllers/courseController");
+
 const router = express.Router();
+const authorizationMiddleware = require("../middleware/authorizationMiddleware");
+const authenticate = require("../middleware/authenticationMiddleware");
+// * Register a new user
+router.post("/register", userController.register);
+
+// * Login and authenticate user, returning a token
+router.post("/login", userController.login);
+
+// * Update user password (public)
+router.put("/forgetPassword", userController.forgetPassword);
 
 // * Get all users
-router.get("/", authorizationMiddleware(['student','admin']),userController.getAllUsers);
-
-
+router.get("/", authorizationMiddleware(["Admin"]),userController.getAllUsers);
 
 // * Get current user
-router.get('/current', authorizationMiddleware(['admin','student']), userController.getCurrentUser);
+router.get('/current', authorizationMiddleware(["StandardUser" , "Organizer" , "Admin"]), userController.getCurrentUser);
 
-// * Get a user by id
-// Place after "/current" so that "current" is not treated as an id
-router.get("/:id", authorizationMiddleware(['admin']), userController.getUser);
+// * Get a single user by ID (Admin only)
+router.get("/:id", authorizationMiddleware(['Admin']), userController.getUser);
 
-// * Update a user
+// * Update a current user
+router.put("/:id",authorizationMiddleware(["StandardUser" , "Organizer" , "Admin"]),userController.updateUser);
 
-router.put("/:id",authorizationMiddleware(['admin','student']),userController.updateUser);
+// * Update a user's role (Admin only)
+router.put("/:id/new", authorizationMiddleware(["Admin"]), userController.updateUser);
 
 // * Delete a user
-router.delete("/:id",authorizationMiddleware(['admin']),userController.deleteUser);
+router.delete("/:id",authorizationMiddleware(["Admin"]),userController.deleteUser);
+
+// * Get current user's bookings 
+router.get("/bookings", authorizationMiddleware(["StandardUser"]), userController.getUserBookings);
+
+// * Get current user's events 
+router.get("/events", authorizationMiddleware(["Organizer"]), userController.getUserEvents);
+
+// * Get current user's event analytics 
+router.get("/events/analytics", authorizationMiddleware(["Organizer"]), userController.getUserEventAnalytics);
 
 
-// * Get courses of specific student
-router.get("/:studentId/courses",  authorizationMiddleware(['admin','student']),courseController.getStudntCourses);
-
-//* add course
-router.put("/:studentId/courses/add/:courseId", authorizationMiddleware(['admin']), courseController.addStudentCourse);
-
-//* remove course
-router.put("/:studentId/courses/remove/:courseId",  authorizationMiddleware(['admin']), courseController.dropStudentCourse);
-
-module.exports = router; // ! Don't forget to export the router
+module.exports = router; 
