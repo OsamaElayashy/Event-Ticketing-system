@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const bookingsController = require('../Controllers/bookingController');  // Use consistent name
-const authorizationMiddleware = require("../middleware/authorizationMiddleware");
-const authenticate = require("../middleware/authenticationMiddleware");
+const authorizationMiddleware = require("../Middleware/authorizationMiddleware");
+const authenticate = require("../Middleware/authenticationMiddleware");
 
 // Standard user actions
 // * Book tickets for an event
