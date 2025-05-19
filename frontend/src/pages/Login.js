@@ -1,13 +1,28 @@
 import React, { useState } from 'react';
-import { Container, Paper, TextField, Button, Typography, Box } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import {
+  Container,
+  Paper,
+  TextField,
+  Button,
+  Typography,
+  Box,
+  Alert,
+  Link,
+} from '@mui/material';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { showToast } from '../components/common/Toast';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
   const handleChange = (e) => {
     setFormData({
@@ -18,8 +33,22 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: Implement login logic
-    console.log('Login attempt:', formData);
+    setError('');
+    setIsSubmitting(true);
+
+    try {
+      await login(formData.email, formData.password);
+      showToast.success('Logged in successfully');
+      
+      // Redirect to the page user was trying to access, or home
+      const from = location.state?.from?.pathname || '/';
+      navigate(from, { replace: true });
+    } catch (err) {
+      setError(err.response?.data?.message || 'Invalid email or password');
+      showToast.error('Login failed');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -29,6 +58,13 @@ const Login = () => {
           <Typography variant="h4" component="h1" align="center" gutterBottom>
             Login
           </Typography>
+
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+
           <form onSubmit={handleSubmit}>
             <TextField
               fullWidth
@@ -39,6 +75,7 @@ const Login = () => {
               onChange={handleChange}
               margin="normal"
               required
+              disabled={isSubmitting}
             />
             <TextField
               fullWidth
@@ -49,6 +86,7 @@ const Login = () => {
               onChange={handleChange}
               margin="normal"
               required
+              disabled={isSubmitting}
             />
             <Button
               type="submit"
@@ -57,16 +95,30 @@ const Login = () => {
               color="primary"
               size="large"
               sx={{ mt: 3 }}
+              disabled={isSubmitting}
             >
-              Login
+              {isSubmitting ? 'Logging in...' : 'Login'}
             </Button>
           </form>
+
           <Box sx={{ mt: 2, textAlign: 'center' }}>
             <Typography variant="body2">
+              <Link
+                component="button"
+                variant="body2"
+                onClick={() => navigate('/forgot-password')}
+                sx={{ mr: 2 }}
+              >
+                Forgot Password?
+              </Link>
               Don't have an account?{' '}
-              <Button color="primary" onClick={() => navigate('/register')}>
+              <Link
+                component="button"
+                variant="body2"
+                onClick={() => navigate('/register')}
+              >
                 Register here
-              </Button>
+              </Link>
             </Typography>
           </Box>
         </Paper>
