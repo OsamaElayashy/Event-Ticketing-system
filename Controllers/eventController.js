@@ -84,6 +84,15 @@ const eventController = {
       res.status(500).json({ message: error.message });
     }
   },
+
+  getUserEvents: async (req, res) => {
+    try {
+      const events = await eventModel.find({ Organizer: req.user.userId });
+      res.status(200).json(events);
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  },
 };
 
 module.exports = eventController;

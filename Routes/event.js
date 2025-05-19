@@ -4,8 +4,8 @@ const eventsController = require('../Controllers/eventController');
 const authorizationMiddleware = require("../middleware/authorizationMiddleware");
 const authenticate = require("../middleware/authenticationMiddleware");
 
-// * Create a new event (Organizer only)
-router.get("/events", authenticate, authorizationMiddleware(["Organizer"]), getUserEvents);
+// * Get events created by the organizer
+router.get("/events", authenticate, authorizationMiddleware(["Organizer"]), eventsController.getUserEvents);
 
 // * Get a list of all approved events (Public)
 router.get("/", eventsController.getApprovedEvents);
