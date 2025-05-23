@@ -1,6 +1,6 @@
 const userModel = require("../models/userModel");
 const bookingModel = require("../models/bookingModel");
-const eventModel = require("../models/EventModel");
+const eventModel = require("../models/eventModel");
 
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
@@ -175,8 +175,37 @@ const userController = {
       return res.status(500).json({ message: error.message });
     }
   },
+  updateCurrentUser: async (req, res) => {
+    try {
+      const { name, email, age } = req.body;
+      const updates = {};
+      
+      if (name) updates.name = name;
+      if (email) updates.email = email;
+      if (age) updates.age = age;
+
+      const updatedUser = await userModel.findByIdAndUpdate(
+        req.user.userId,
+        updates,
+        { new: true }
+      );
+
+      if (!updatedUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      return res.status(200).json({ 
+        user: updatedUser, 
+        message: "Profile updated successfully" 
+      });
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  },
+  forgetPassword: async (req, res) => {
+    // Placeholder implementation
+    return res.status(501).json({ message: 'Not implemented yet.' });
+  },
 };
-
-
 
 module.exports = userController;

@@ -1,4 +1,4 @@
-const eventModel = require("../models/EventModel");
+const eventModel = require("../models/eventModel");
 
 const eventController = {
   createEvent: async (req, res) => {
@@ -31,6 +31,15 @@ const eventController = {
       await newEvent.save();
 
       res.status(201).json({ message: "Event created successfully", newEvent });
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  },
+
+  getUserEvents: async (req, res) => {
+    try {
+      const events = await eventModel.find({ Organizer: req.user.userId });
+      res.status(200).json(events);
     } catch (error) {
       res.status(500).json({ message: error.message });
     }
