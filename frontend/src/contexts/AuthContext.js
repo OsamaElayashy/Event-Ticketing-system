@@ -1,82 +1,131 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import { createContext, useContext, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '../api/api';
 
-const AuthContext = createContext(null);
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true); // Initial loading state
+  const navigate = useNavigate();
 
+  // Check for existing session on initial load
   useEffect(() => {
-    checkAuth();
+    const checkAuthStatus = async () => {
+      try {
+        const response = await api.get('/auth/check-session');
+        setUser(response.data.user);
+      } catch (error) {
+        // Session is invalid or expired
+        localStorage.removeItem('token');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuthStatus();
   }, []);
 
-  const checkAuth = async () => {
+  const login = async (email, password) => {
+    setIsLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        const response = await axios.get('/api/auth/me', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setUser(response.data);
-      }
-    } catch (error) {
-      localStorage.removeItem('token');
-      setUser(null);
+      const response = await api.post('/auth/login', { email, password });
+      setUser(response.data.user);
+      localStorage.setItem('token', response.data.token);
+      return response.data;
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const login = async (email, password) => {
-    const response = await axios.post('/api/auth/login', { email, password });
-    const { token, user } = response.data;
-    localStorage.setItem('token', token);
-    setUser(user);
-    return user;
-  };
-
   const register = async (userData) => {
-    const response = await axios.post('/api/auth/register', userData);
-    return response.data;
+    setIsLoading(true);
+    try {
+      const response = await api.post('/auth/register', userData);
+      return response.data;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    setUser(null);
+  const logout = async () => {
+    try {
+      await api.post('/auth/logout');
+      setUser(null);
+      localStorage.removeItem('token');
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
 
-  const forgotPassword = async (email) => {
-    await axios.post('/api/auth/forgot-password', { email });
+  const updateUser = (updatedUser) => {
+    setUser(updatedUser);
   };
 
-  const resetPassword = async (token, password) => {
-    await axios.post('/api/auth/reset-password', { token, password });
+  // Function to refresh token (optional)
+  const refreshToken = async () => {
+    try {
+      const response = await api.post('/auth/refresh-token');
+      localStorage.setItem('token', response.data.token);
+      return response.data.token;
+    } catch (error) {
+      logout();
+      throw error;
+    }
   };
+
+  // Add axios response interceptor for token refresh (optional)
+  useEffect(() => {
+    const interceptor = api.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest = error.config;
+        
+        if (error.response?.status === 401 && !originalRequest._retry) {
+          originalRequest._retry = true;
+          
+          try {
+            const newToken = await refreshToken();
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            return api(originalRequest);
+          } catch (refreshError) {
+            logout();
+            return Promise.reject(refreshError);
+          }
+        }
+        
+        return Promise.reject(error);
+      }
+    );
+
+      return () => {
+    api.interceptors.response.eject(interceptor);
+  };
+}, [logout, refreshToken]);
 
   const value = {
     user,
-    loading,
+    isLoading,
+    isAuthenticated: !!user,
     login,
     register,
     logout,
-    forgotPassword,
-    resetPassword,
+    updateUser,
+    refreshToken
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {!isLoading && children}
     </AuthContext.Provider>
   );
 };
 
-export default AuthContext; 
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
