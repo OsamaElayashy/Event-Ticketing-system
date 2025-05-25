@@ -3,15 +3,19 @@ const router = express.Router();
 
 const userController = require("../Controllers/userController");
 
-// * login
+// Login
 router.post("/login", userController.login);
-// * register
+
+// Register
 router.post("/register", userController.register);
 
-// Logout
-router.post("/logout", userController.logout);
-
 // Forgot Password
-router.post("/forgot-password", userController.forgotPassword);
+router.post("/forgot-password", userController.forgetPassword);
+
+// Logout (simple cookie clearing)
+router.post("/logout", (req, res) => {
+  res.clearCookie('token');
+  return res.status(200).json({ message: "Logged out successfully" });
+});
 
 module.exports = router; // ! Don't forget to export the router

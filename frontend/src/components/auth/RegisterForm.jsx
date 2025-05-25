@@ -50,11 +50,25 @@ const RegisterForm = () => {
     
     setIsLoading(true);
     try {
-      await register(formData);
+      // Transform the form data to match backend model
+      const userData = {
+        name: `${formData.firstName} ${formData.lastName}`.trim(),
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+        role: formData.role
+      };
+
+      console.log('Sending registration data:', { ...userData, password: '***' });
+      
+      await register(userData);
       toast.success('Account created successfully! Please log in.');
       navigate('/login');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Registration failed. Please try again.');
+      console.error('Registration error:', error);
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error ||
+                          'Registration failed. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
