@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../api/api';
+import { BOOKING_ENDPOINTS } from '../../config/api.config';
 import { toast } from 'react-toastify';
 import './BookTicketForm.css';
 
@@ -24,7 +25,7 @@ const BookTicketForm = ({ event }) => {
 
     setIsLoading(true);
     try {
-      const response = await api.post('/bookings', {
+      const response = await api.post(BOOKING_ENDPOINTS.CREATE_BOOKING, {
         eventId: event._id,
         tickets: ticketCount
       });
@@ -49,30 +50,21 @@ const BookTicketForm = ({ event }) => {
             min="1"
             max={event.ticketsAvailable}
             value={ticketCount}
-            onChange={(e) => setTicketCount(Math.max)(1, Math.min(
+            onChange={(e) => setTicketCount(Math.max(1, Math.min(
               event.ticketsAvailable, 
               parseInt(e.target.value) || 1
-             ))}
+            )))}
           />
           <small>
             Available: {event.ticketsAvailable} | Max: {event.ticketsAvailable} per order
           </small>
         </div>
-
-        <div className="price-summary">
-          <p>Price per ticket: ${event.price.toFixed(2)}</p>
-          <p className="total-price">
-            Total: ${(event.price * ticketCount).toFixed(2)}
-          </p>
-        </div>
-
         <button 
           type="submit" 
-          disabled={isLoading || event.ticketsAvailable === 0}
-          className={event.ticketsAvailable === 0 ? 'sold-out' : ''}
+          className="submit-button" 
+          disabled={isLoading || !event.ticketsAvailable}
         >
-          {isLoading ? 'Processing...' : 
-           event.ticketsAvailable === 0 ? 'Sold Out' : 'Book Now'}
+          {isLoading ? 'Booking...' : 'Book Now'}
         </button>
       </form>
     </div>

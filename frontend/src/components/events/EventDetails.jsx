@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../api/api';
+import { EVENT_ENDPOINTS } from '../../config/api.config';
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
 //import BookTicketForm from '../bookings/BookTicketForm';
@@ -19,9 +20,9 @@ const EventDetails = () => {
   useEffect(() => {
     const fetchEvent = async () => {
       try {
-        const response = await api.get(`/events/${id}`);
+        const response = await api.get(EVENT_ENDPOINTS.EVENT_BY_ID(id));
         setEvent(response.data);
-        setIsOrganizer(user?.role === 'organizer' && user?._id === response.data.organizer._id);
+        setIsOrganizer(user?.role === 'Organizer' && user?._id === response.data.organizer._id);
       } catch (error) {
         toast.error('Failed to load event details');
         navigate('/events');
@@ -36,7 +37,7 @@ const EventDetails = () => {
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete this event?')) {
       try {
-        await api.delete(`/events/${id}`);
+        await api.delete(EVENT_ENDPOINTS.DELETE_EVENT(id));
         toast.success('Event deleted successfully');
         navigate(isOrganizer ? '/my-events' : '/events');
       } catch (error) {
@@ -52,7 +53,7 @@ const EventDetails = () => {
     <div className="event-details-container">
       <div className="event-header">
         <h1>{event.title}</h1>
-        {(isOrganizer || user?.role === 'admin') && (
+        {(isOrganizer || user?.role === 'Admin') && (
           <div className="event-actions">
             <button
               onClick={() => navigate(`/my-events/${id}/edit`)}
@@ -108,6 +109,13 @@ const EventDetails = () => {
         <h3>Description</h3>
         <p>{event.description || 'No description provided.'}</p>
       </div>
+
+      {user && user.role !== 'Organizer' && event.ticketsAvailable > 0 && (
+        <div className="booking-section">
+          <h3>Book Tickets</h3>
+          {/* Add BookTicketForm component here when ready */}
+        </div>
+      )}
     </div>
   );
 };

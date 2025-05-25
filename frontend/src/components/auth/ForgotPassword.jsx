@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/api';
+import { USER_ENDPOINTS } from '../../config/api.config';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './ForgotPassword.css';
@@ -46,7 +47,7 @@ const ForgotPassword = () => {
 
     setIsLoading(true);
     try {
-      await api.post('/auth/forgot-password', { email });
+      await api.post(USER_ENDPOINTS.FORGOT_PASSWORD, { email });
       toast.success('Reset code sent to your email');
       setStep(2);
     } catch (error) {
@@ -65,7 +66,7 @@ const ForgotPassword = () => {
 
     setIsLoading(true);
     try {
-      await api.post('/auth/verify-reset-code', { email, code: resetCode });
+      await api.post(USER_ENDPOINTS.VERIFY_RESET_CODE, { email, code: resetCode });
       toast.success('Code verified successfully');
       setStep(3);
     } catch (error) {
@@ -81,7 +82,7 @@ const ForgotPassword = () => {
 
     setIsLoading(true);
     try {
-      await api.post('/auth/reset-password', { 
+      await api.post(USER_ENDPOINTS.RESET_PASSWORD, { 
         email, 
         code: resetCode, 
         newPassword 

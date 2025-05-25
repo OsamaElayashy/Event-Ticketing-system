@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/api';
+import { AUTH_ENDPOINTS, USER_ENDPOINTS } from '../config/api.config';
 
 const AuthContext = createContext();
 
@@ -13,7 +14,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
-        const response = await api.get('/auth/check-session');
+        const response = await api.get(AUTH_ENDPOINTS.CHECK_SESSION);
         setUser(response.data.user);
       } catch (error) {
         // Session is invalid or expired
@@ -28,7 +29,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await api.post('/auth/login', { email, password });
+      const response = await api.post(AUTH_ENDPOINTS.LOGIN, { email, password });
       const { user, token } = response.data;
       setUser(user);
       if (token) {
@@ -43,7 +44,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      const response = await api.post('/auth/register', userData);
+      const response = await api.post(USER_ENDPOINTS.REGISTER, userData);
       return response.data;
     } catch (error) {
       console.error('Registration error:', error.response?.data?.message || error.message);
@@ -53,7 +54,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await api.post('/auth/logout');
+      await api.post(AUTH_ENDPOINTS.LOGOUT);
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
@@ -70,7 +71,7 @@ export const AuthProvider = ({ children }) => {
   // Function to refresh token (optional)
   const refreshToken = async () => {
     try {
-      const response = await api.post('/auth/refresh-token');
+      const response = await api.post(AUTH_ENDPOINTS.REFRESH_TOKEN);
       localStorage.setItem('token', response.data.token);
       return response.data.token;
     } catch (error) {

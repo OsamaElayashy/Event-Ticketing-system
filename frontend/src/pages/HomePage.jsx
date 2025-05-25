@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../api/api';
+import { EVENT_ENDPOINTS } from '../config/api.config';
 import EventList from '../components/events/EventList';
 import WelcomeBanner from '../components/common/WelcomeBanner';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { toast } from 'react-toastify';
+import './HomePage.css';
 
 const HomePage = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [events, setEvents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,9 +20,9 @@ const HomePage = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await api.get('/events', {
+        const response = await api.get(EVENT_ENDPOINTS.ALL_EVENTS, {
           params: {
-            status: 'approved', // Only show approved events
+            status: 'approved',
             search: searchTerm,
             category: categoryFilter !== 'all' ? categoryFilter : undefined
           }
@@ -35,55 +39,72 @@ const HomePage = () => {
     fetchEvents();
   }, [searchTerm, categoryFilter]);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    // The useEffect will automatically trigger when searchTerm changes
+  const handleAddEvent = () => {
+    navigate('/events/new');
   };
 
   return (
-    <div className="home-page">
+    <div className="home-container">
       <WelcomeBanner user={user} />
       
-      <div className="search-filter-container">
-        <form onSubmit={handleSearch} className="search-form">
+      <div className="home-content">
+        <div className="home-header">
+          <h1>Upcoming Events</h1>
+          {user?.role === 'Organizer' && (
+            <button 
+              className="add-event-button"
+              onClick={handleAddEvent}
+            >
+              + Add New Event
+            </button>
+          )}
+        </div>
+
+        <div className="search-filters">
           <input
             type="text"
             placeholder="Search events..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-input"
           />
-          <button type="submit">Search</button>
-        </form>
-        
-        <div className="filter-section">
-          <label htmlFor="category">Filter by category:</label>
           <select
-            id="category"
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
+            className="category-filter"
           >
             <option value="all">All Categories</option>
             <option value="music">Music</option>
             <option value="sports">Sports</option>
             <option value="arts">Arts & Theater</option>
-            <option value="conference">Conferences</option>
-            <option value="workshop">Workshops</option>
+            <option value="conference">Conference</option>
+            <option value="workshop">Workshop</option>
+            <option value="other">Other</option>
           </select>
         </div>
+
+        {isLoading ? (
+          <LoadingSpinner />
+        ) : (
+          <div className="events-section">
+            {events.length > 0 ? (
+              <EventList events={events} />
+            ) : (
+              <div className="no-events">
+                <p>No events found</p>
+                {user?.role === 'Organizer' && (
+                  <button 
+                    className="create-first-event-button"
+                    onClick={handleAddEvent}
+                  >
+                    Create Your First Event
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
-      
-      {isLoading ? (
-        <LoadingSpinner />
-      ) : (
-        <>
-          <h2 className="events-title">Upcoming Events</h2>
-          {events.length > 0 ? (
-            <EventList events={events} />
-          ) : (
-            <p className="no-events">No events found. Try adjusting your search.</p>
-          )}
-        </>
-      )}
     </div>
   );
 };
