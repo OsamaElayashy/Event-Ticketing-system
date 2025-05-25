@@ -27,35 +27,39 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    setIsLoading(true);
     try {
       const response = await api.post('/auth/login', { email, password });
-      setUser(response.data.user);
-      localStorage.setItem('token', response.data.token);
+      const { user, token } = response.data;
+      setUser(user);
+      if (token) {
+        localStorage.setItem('token', token);
+      }
       return response.data;
-    } finally {
-      setIsLoading(false);
+    } catch (error) {
+      console.error('Login error:', error.response?.data?.message || error.message);
+      throw error;
     }
   };
 
   const register = async (userData) => {
-    setIsLoading(true);
     try {
       const response = await api.post('/auth/register', userData);
       return response.data;
-    } finally {
-      setIsLoading(false);
+    } catch (error) {
+      console.error('Registration error:', error.response?.data?.message || error.message);
+      throw error;
     }
   };
 
   const logout = async () => {
     try {
       await api.post('/auth/logout');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
       setUser(null);
       localStorage.removeItem('token');
       navigate('/login');
-    } catch (error) {
-      console.error('Logout failed:', error);
     }
   };
 
@@ -124,7 +128,7 @@ export const AuthProvider = ({ children }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;

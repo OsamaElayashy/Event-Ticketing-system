@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useAuth } from '../../contexts/AuthContext';
-import './LoginForm.css'
-
+import './LoginForm.css';
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
@@ -17,6 +16,7 @@ const LoginForm = () => {
   const validateForm = () => {
     const newErrors = {};
     if (!email) newErrors.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = 'Please enter a valid email';
     if (!password) newErrors.password = 'Password is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -30,10 +30,10 @@ const LoginForm = () => {
     setIsLoading(true);
     try {
       await login(email, password);
-      toast.success('Login successful!');
+      toast.success('Welcome back!');
       navigate('/');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Login failed');
+      toast.error(error.response?.data?.message || 'Invalid email or password');
     } finally {
       setIsLoading(false);
     }
@@ -41,42 +41,57 @@ const LoginForm = () => {
 
   return (
     <div className="login-container">
-      <h2>Login to Your Account</h2>
-      <form onSubmit={handleSubmit}>
+      <div className="login-header">
+        <h1 className="brand-title">EventTick</h1>
+        <p className="welcome-text">Welcome back! Please login to your account.</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="login-form">
         <div className="form-group">
-          <label htmlFor="email">Email</label>
-          <input
-            type="email"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className={errors.email ? 'error' : ''}
-          />
-          {errors.email && <span className="error-message">{errors.email}</span>}
+          <label htmlFor="email">Email Address</label>
+          <div className="input-wrapper">
+            <input
+              type="email"
+              id="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={errors.email ? 'error' : ''}
+            />
+            {errors.email && <span className="error-message">{errors.email}</span>}
+          </div>
         </div>
         
         <div className="form-group">
           <label htmlFor="password">Password</label>
-          <input
-            type="password"
-            id="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={errors.password ? 'error' : ''}
-          />
-          {errors.password && <span className="error-message">{errors.password}</span>}
+          <div className="input-wrapper">
+            <input
+              type="password"
+              id="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={errors.password ? 'error' : ''}
+            />
+            {errors.password && <span className="error-message">{errors.password}</span>}
+          </div>
+        </div>
+
+        <div className="forgot-password">
+          <Link to="/forgot-password" className="forgot-link">Forgot password?</Link>
         </div>
         
-        <button type="submit" disabled={isLoading}>
-          {isLoading ? 'Logging in...' : 'Login'}
+        <button type="submit" className="login-button" disabled={isLoading}>
+          {isLoading ? (
+            <span className="loading-spinner"></span>
+          ) : (
+            'Sign In'
+          )}
         </button>
         
-        <div className="login-footer">
+        <div className="register-prompt">
           <p>
-            Don't have an account? <a href="/register">Register here</a>
-          </p>
-          <p>
-            <a href="/forgot-password">Forgot password?</a>
+            Don't have an account? <Link to="/register" className="register-link">Create one now</Link>
           </p>
         </div>
       </form>

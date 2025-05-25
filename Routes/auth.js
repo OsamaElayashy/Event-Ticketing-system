@@ -4,13 +4,14 @@ const router = express.Router();
 const userController = require("../Controllers/userController");
 
 // * login
-router.post("/login",userController.login );
+router.post("/login", userController.login);
 // * register
-router.post("/register",userController.register);
+router.post("/register", userController.register);
 
-import api from './index';
+// Logout
+router.post("/logout", userController.logout);
 
-export const logout = () => api.post('/logout');
-export const forgotPassword = (email) => api.post('/forgot-password', { email });
+// Forgot Password
+router.post("/forgot-password", userController.forgotPassword);
 
 module.exports = router; // ! Don't forget to export the router

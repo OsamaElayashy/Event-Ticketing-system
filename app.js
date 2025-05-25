@@ -1,67 +1,42 @@
-
 const express = require("express");
 const mongoose = require("mongoose");
-const cookieParser=require('cookie-parser')
+const cookieParser = require('cookie-parser');
 const cors = require("cors");
-const dotenv= require('dotenv').config();
+require('dotenv').config();
 
 const app = express();
 
-const eventsRouter = require('./Routes/event.js');
-const userRouter = require("./Routes/user.js");
-const authRouter = require("./Routes/auth.js");
-const authenticationMiddleware=require('./Middleware/authenticationMiddleware.js')
-
-app.use('/events', eventsRouter);
-app.use(authenticationMiddleware);
+// Middleware
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true
+}));
 
-app.use(cookieParser())
+// Routes
+const authRouter = require('./Routes/auth.js');
+const userRouter = require('./Routes/user.js');
+const eventsRouter = require('./Routes/event.js');
 
-app.use(
-  cors({
-    origin: process.env.ORIGIN,
-    methods: ["GET", "POST", "DELETE", "PUT"],
-    credentials: true,
-  })
-);
+// Public routes (no authentication required)
+app.use('/api/auth', authRouter);
 
+// Protected routes (require authentication)
+const authenticationMiddleware = require('./Middleware/authenticationMiddleware.js');
+app.use('/api/users', authenticationMiddleware, userRouter);
+app.use('/api/events', authenticationMiddleware, eventsRouter);
 
-
-
-app.use("/api/v1", authRouter);
-
-
-app.use("/api/v1/users", userRouter);
-
-const db_name = dotenv.DB_NAME;
-// * Cloud Connection
-// const db_url = `mongodb+srv://TestUser:TestPassword@cluster0.lfqod.mongodb.net/${db_name}?retryWrites=true&w=majority`;
-// * Local connection
-const db_url = `${process.env.DB_URL}/${db_name}`; // if it gives error try to change the localhost to 127.0.0.1
-
-// ! Mongoose Driver Connection
-
-
+// Database connection
+const db_name = process.env.DB_NAME;
+const db_url = `${process.env.DB_URL}/${db_name}`;
 
 mongoose
   .connect(db_url)
-  .then(() => console.log("mongoDB connected"))
-  .catch((e) => {
-    console.log(e);
-  });
+  .then(() => console.log("MongoDB connected"))
+  .catch((err) => console.error("MongoDB connection error:", err));
 
-app.use(function (req, res, next) {
-  return res.status(404).send("404");
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
-app.listen(process.env.PORT||4000, () => console.log("server started"));
-
-const auth = require('./Routes/auth.js');
-app.use('/api/v1', auth);
-const event = require('./Routes/event.js');
-app.use('/api/v1', event);
-const booking = require('./Routes/booking.js');
-app.use('/api/v1', booking);
-const user = require('./Routes/user.js');
-app.use('/api/v1', user);
