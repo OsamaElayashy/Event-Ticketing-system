@@ -7,8 +7,8 @@ const authenticate = require("../Middleware/authenticationMiddleware");
 // Public routes
 router.post("/register", userController.register);
 router.post("/forgot-password", userController.forgetPassword);
-router.post("/verify-reset-code", userController.verifyResetCode);
-router.post("/reset-password", userController.resetPassword);
+router.get("/verify-reset-code/:token", userController.verifyResetCode);
+router.post("/reset-password/:token", userController.resetPassword);
 
 // Protected routes
 // Get current user profile

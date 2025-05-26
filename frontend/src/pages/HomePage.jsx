@@ -20,13 +20,7 @@ const HomePage = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await api.get(EVENT_ENDPOINTS.ALL_EVENTS, {
-          params: {
-            status: 'approved',
-            search: searchTerm,
-            category: categoryFilter !== 'all' ? categoryFilter : undefined
-          }
-        });
+        const response = await api.get(EVENT_ENDPOINTS.ALL_EVENTS);
         setEvents(response.data);
       } catch (error) {
         toast.error('Failed to load events');

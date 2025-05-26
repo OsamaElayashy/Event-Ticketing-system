@@ -1,11 +1,22 @@
 const userModel = require("../models/userModel");
 const bookingModel = require("../models/bookingModel");
 const eventModel = require("../models/eventModel");
-
+const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const secretKey = process.env.SECRET_KEY;
 const bcrypt = require("bcrypt");
+
+// Create a transporter for sending emails
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD
+  }
+});
+
 const userController = {
   register: async (req, res) => {
     try {
@@ -236,16 +247,98 @@ const userController = {
     }
   },
   forgetPassword: async (req, res) => {
-    // Placeholder implementation
-    return res.status(501).json({ message: 'Not implemented yet.' });
+    try {
+      const { email } = req.body;
+
+      // Find user by email
+      const user = await userModel.findOne({ email });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Generate reset token
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const resetTokenExpiry = Date.now() + 3600000; // Token valid for 1 hour
+
+      // Save reset token to user
+      user.resetToken = resetToken;
+      user.resetTokenExpiry = resetTokenExpiry;
+      await user.save();
+
+      // Send reset email
+      const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: user.email,
+        subject: 'Password Reset Request',
+        html: `
+          <h1>Password Reset Request</h1>
+          <p>You requested a password reset. Click the link below to reset your password:</p>
+          <a href="${resetUrl}">Reset Password</a>
+          <p>This link will expire in 1 hour.</p>
+          <p>If you didn't request this, please ignore this email.</p>
+        `
+      };
+
+      await transporter.sendMail(mailOptions);
+      res.status(200).json({ message: "Password reset email sent" });
+    } catch (error) {
+      console.error("Error in forgetPassword:", error);
+      res.status(500).json({ message: "Error sending reset email" });
+    }
   },
 
   verifyResetCode: async (req, res) => {
-  return res.status(501).json({ message: 'Not implemented yet.' });
-},
-resetPassword: async (req, res) => {
-  return res.status(501).json({ message: 'Not implemented yet.' });
-},
+    try {
+      const { token } = req.params;
+
+      // Find user with valid reset token
+      const user = await userModel.findOne({
+        resetToken: token,
+        resetTokenExpiry: { $gt: Date.now() }
+      });
+
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired reset token" });
+      }
+
+      res.status(200).json({ message: "Valid reset token" });
+    } catch (error) {
+      console.error("Error in verifyResetCode:", error);
+      res.status(500).json({ message: "Error verifying reset token" });
+    }
+  },
+
+  resetPassword: async (req, res) => {
+    try {
+      const { token } = req.params;
+      const { password } = req.body;
+
+      // Find user with valid reset token
+      const user = await userModel.findOne({
+        resetToken: token,
+        resetTokenExpiry: { $gt: Date.now() }
+      });
+
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired reset token" });
+      }
+
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Update user's password and clear reset token
+      user.password = hashedPassword;
+      user.resetToken = undefined;
+      user.resetTokenExpiry = undefined;
+      await user.save();
+
+      res.status(200).json({ message: "Password reset successful" });
+    } catch (error) {
+      console.error("Error in resetPassword:", error);
+      res.status(500).json({ message: "Error resetting password" });
+    }
+  },
 
   getAdminStats: async (req, res) => {
     try {

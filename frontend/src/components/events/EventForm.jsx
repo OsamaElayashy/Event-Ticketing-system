@@ -135,10 +135,16 @@ const EventForm = ({ isEditing = false }) => {
     try {
       // Prepare the event data
       const eventData = {
-        ...formData,
-        organizerId: user._id,
-        status: 'pending', // New events start as pending
-        bookedTickets: 0 // Initialize booked tickets count
+        title: formData.title,
+        description: formData.description,
+        Date: new Date(`${formData.date}T${formData.time}`),
+        location: formData.location,
+        category: formData.category,
+        image: formData.imageUrl,
+        ticketPrice: parseFloat(formData.price),
+        totaltickets: parseInt(formData.capacity),
+        Organizer: user._id,
+        status: 'pending'
       };
 
       let response;

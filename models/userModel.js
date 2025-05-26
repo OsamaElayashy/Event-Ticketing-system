@@ -20,7 +20,14 @@ const UserSchema = new mongoose.Schema( {
         type: String,
         enum: ["StandardUser" , "Organizer" , "Admin"],
         required: true
-    }},  { timestamps: true}
+    },
+    resetToken: {
+        type: String
+    },
+    resetTokenExpiry: {
+        type: Date
+    }
+},  { timestamps: true}
 );
 
 //Mongoose Model
