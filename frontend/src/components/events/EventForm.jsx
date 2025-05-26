@@ -1,27 +1,48 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../api/api';
 import { toast } from 'react-toastify';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
+import {
+  Container,
+  Paper,
+  Typography,
+  TextField,
+  Button,
+  Box,
+  Grid,
+  MenuItem,
+  Alert,
+  CircularProgress
+} from '@mui/material';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { LocalizationProvider, DateTimePicker } from '@mui/x-date-pickers';
 import './EventForm.css'
 
-const EventForm = ({ isEdit = false }) => {
+const EventForm = ({ isEdit = false, eventData = null }) => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState({});
-  
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     date: new Date(),
     location: '',
-    category: 'music',
-    price: 0,
-    ticketCount: 100,
-    imageUrl: ''
+    totalTickets: '',
+    price: '',
+    category: '',
+    ...eventData
   });
+
+  const categories = [
+    'Music',
+    'Sports',
+    'Arts',
+    'Food',
+    'Technology',
+    'Business',
+    'Other'
+  ];
 
   useEffect(() => {
     if (isEdit) {
@@ -49,30 +70,18 @@ const EventForm = ({ isEdit = false }) => {
     }));
   };
 
-  const handleDateChange = (date) => {
+  const handleDateChange = (newDate) => {
     setFormData(prev => ({
       ...prev,
-      date
+      date: newDate
     }));
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-    if (!formData.title.trim()) newErrors.title = 'Title is required';
-    if (!formData.location.trim()) newErrors.location = 'Location is required';
-    if (formData.date < new Date()) newErrors.date = 'Date must be in the future';
-    if (formData.ticketCount < 1) newErrors.ticketCount = 'Must have at least 1 ticket';
-    if (formData.price < 0) newErrors.price = 'Price cannot be negative';
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    setLoading(true);
+    setError('');
 
-    setIsLoading(true);
     try {
       const endpoint = isEdit ? `/events/${id}` : '/events';
       const method = isEdit ? 'put' : 'post';
@@ -84,142 +93,144 @@ const EventForm = ({ isEdit = false }) => {
 
       toast.success(`Event ${isEdit ? 'updated' : 'created'} successfully!`);
       navigate(isEdit ? '/my-events' : '/events');
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Operation failed');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to save event');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="event-form-container">
-      <h2>{isEdit ? 'Edit Event' : 'Create New Event'}</h2>
-      <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label>Title*</label>
-          <input
-            type="text"
-            name="title"
-            value={formData.title}
-            onChange={handleChange}
-            className={errors.title ? 'error' : ''}
-          />
-          {errors.title && <span className="error-message">{errors.title}</span>}
-        </div>
+    <Container maxWidth="md" sx={{ py: 4 }}>
+      <Paper elevation={3} sx={{ p: 4 }}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          {isEdit ? 'Edit Event' : 'Create New Event'}
+        </Typography>
 
-        <div className="form-group">
-          <label>Description</label>
-          <textarea
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            rows="4"
-          />
-        </div>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
 
-        <div className="form-row">
-          <div className="form-group">
-            <label>Date & Time*</label>
-            <DatePicker
-              selected={formData.date}
-              onChange={handleDateChange}
-              showTimeSelect
-              timeFormat="HH:mm"
-              timeIntervals={15}
-              dateFormat="MMMM d, yyyy h:mm aa"
-              className={errors.date ? 'error' : ''}
-            />
-            {errors.date && <span className="error-message">{errors.date}</span>}
-          </div>
+        <Box component="form" onSubmit={handleSubmit}>
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <TextField
+                required
+                fullWidth
+                label="Event Title"
+                name="title"
+                value={formData.title}
+                onChange={handleChange}
+              />
+            </Grid>
 
-          <div className="form-group">
-            <label>Location*</label>
-            <input
-              type="text"
-              name="location"
-              value={formData.location}
-              onChange={handleChange}
-              className={errors.location ? 'error' : ''}
-            />
-            {errors.location && <span className="error-message">{errors.location}</span>}
-          </div>
-        </div>
+            <Grid item xs={12}>
+              <TextField
+                required
+                fullWidth
+                multiline
+                rows={4}
+                label="Description"
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+              />
+            </Grid>
 
-        <div className="form-row">
-          <div className="form-group">
-            <label>Category</label>
-            <select
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-            >
-              <option value="music">Music</option>
-              <option value="sports">Sports</option>
-              <option value="arts">Arts & Theater</option>
-              <option value="conference">Conference</option>
-              <option value="workshop">Workshop</option>
-            </select>
-          </div>
+            <Grid item xs={12} md={6}>
+              <LocalizationProvider dateAdapter={AdapterDateFns}>
+                <DateTimePicker
+                  label="Event Date & Time"
+                  value={formData.date}
+                  onChange={handleDateChange}
+                  renderInput={(params) => <TextField {...params} fullWidth required />}
+                />
+              </LocalizationProvider>
+            </Grid>
 
-          <div className="form-group">
-            <label>Price ($)</label>
-            <input
-              type="number"
-              name="price"
-              min="0"
-              step="0.01"
-              value={formData.price}
-              onChange={handleChange}
-              className={errors.price ? 'error' : ''}
-            />
-            {errors.price && <span className="error-message">{errors.price}</span>}
-          </div>
-        </div>
+            <Grid item xs={12} md={6}>
+              <TextField
+                required
+                fullWidth
+                label="Location"
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+              />
+            </Grid>
 
-        <div className="form-row">
-          <div className="form-group">
-            <label>Ticket Count*</label>
-            <input
-              type="number"
-              name="ticketCount"
-              min="1"
-              value={formData.ticketCount}
-              onChange={handleChange}
-              className={errors.ticketCount ? 'error' : ''}
-            />
-            {errors.ticketCount && <span className="error-message">{errors.ticketCount}</span>}
-          </div>
+            <Grid item xs={12} md={6}>
+              <TextField
+                required
+                fullWidth
+                type="number"
+                label="Total Tickets"
+                name="totalTickets"
+                value={formData.totalTickets}
+                onChange={handleChange}
+                inputProps={{ min: 1 }}
+              />
+            </Grid>
 
-          <div className="form-group">
-            <label>Image URL</label>
-            <input
-              type="url"
-              name="imageUrl"
-              value={formData.imageUrl}
-              onChange={handleChange}
-              placeholder="https://example.com/image.jpg"
-            />
-          </div>
-        </div>
+            <Grid item xs={12} md={6}>
+              <TextField
+                required
+                fullWidth
+                type="number"
+                label="Price per Ticket"
+                name="price"
+                value={formData.price}
+                onChange={handleChange}
+                inputProps={{ min: 0, step: 0.01 }}
+              />
+            </Grid>
 
-        <div className="form-actions">
-          <button
-            type="button"
-            className="cancel-button"
-            onClick={() => navigate(-1)}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="submit-button"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Processing...' : isEdit ? 'Update Event' : 'Create Event'}
-          </button>
-        </div>
-      </form>
-    </div>
+            <Grid item xs={12}>
+              <TextField
+                required
+                fullWidth
+                select
+                label="Category"
+                name="category"
+                value={formData.category}
+                onChange={handleChange}
+              >
+                {categories.map((category) => (
+                  <MenuItem key={category} value={category}>
+                    {category}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+
+            <Grid item xs={12}>
+              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                <Button
+                  variant="outlined"
+                  onClick={() => navigate(-1)}
+                  disabled={loading}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <CircularProgress size={24} />
+                  ) : (
+                    isEdit ? 'Update Event' : 'Create Event'
+                  )}
+                </Button>
+              </Box>
+            </Grid>
+          </Grid>
+        </Box>
+      </Paper>
+    </Container>
   );
 };
 

@@ -64,6 +64,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateUserProfile = async (updateData) => {
+    try {
+      const response = await api.put(USER_ENDPOINTS.UPDATE_PROFILE, updateData);
+      const updatedUser = response.data.user;
+      setUser(updatedUser);
+      return updatedUser;
+    } catch (error) {
+      console.error('Profile update error:', error.response?.data?.message || error.message);
+      throw error;
+    }
+  };
+
   const updateUser = (updatedUser) => {
     setUser(updatedUser);
   };
@@ -104,10 +116,10 @@ export const AuthProvider = ({ children }) => {
       }
     );
 
-      return () => {
-    api.interceptors.response.eject(interceptor);
-  };
-}, [logout, refreshToken]);
+    return () => {
+      api.interceptors.response.eject(interceptor);
+    };
+  }, [logout, refreshToken]);
 
   const value = {
     user,
@@ -117,6 +129,7 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     updateUser,
+    updateUserProfile,
     refreshToken
   };
 

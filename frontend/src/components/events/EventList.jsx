@@ -1,148 +1,204 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import api from '../../api/api';
-import { EVENT_ENDPOINTS } from '../../config/api.config';
-import EventCard from './EventCard';
-import LoadingSpinner from '../common/LoadingSpinner';
-import { toast } from 'react-toastify';
-import './EventList.css';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  Container,
+  Grid,
+  Card,
+  CardContent,
+  CardMedia,
+  Typography,
+  Box,
+  TextField,
+  MenuItem,
+  InputAdornment,
+  Chip,
+  CircularProgress,
+  Pagination
+} from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
+import { format } from 'date-fns';
 
 const EventList = () => {
-  const navigate = useNavigate();
   const [events, setEvents] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [filters, setFilters] = useState({
-    search: '',
-    category: 'all',
-    date: 'all'
-  });
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [category, setCategory] = useState('all');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const categories = [
+    'all',
+    'Music',
+    'Sports',
+    'Arts',
+    'Food',
+    'Technology',
+    'Business',
+    'Other'
+  ];
 
   useEffect(() => {
     fetchEvents();
-  }, []);
+  }, [page, category, searchTerm]);
 
   const fetchEvents = async () => {
+    setLoading(true);
     try {
-      const response = await api.get(EVENT_ENDPOINTS.GET_APPROVED_EVENTS);
-      setEvents(response.data);
+      // TODO: Implement API call to fetch events
+      // Simulated API response
+      const response = {
+        events: [
+          {
+            _id: '1',
+            title: 'Sample Event',
+            description: 'This is a sample event description',
+            date: new Date(),
+            location: 'Sample Location',
+            category: 'Music',
+            price: 50,
+            imageUrl: 'https://source.unsplash.com/random/800x600/?event',
+            status: 'approved'
+          }
+        ],
+        totalPages: 1
+      };
+      
+      setEvents(response.events);
+      setTotalPages(response.totalPages);
     } catch (error) {
-      toast.error('Failed to load events');
+      console.error('Error fetching events:', error);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleSearch = (e) => {
-    setFilters(prev => ({
-      ...prev,
-      search: e.target.value
-    }));
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    setPage(1);
   };
 
   const handleCategoryChange = (e) => {
-    setFilters(prev => ({
-      ...prev,
-      category: e.target.value
-    }));
+    setCategory(e.target.value);
+    setPage(1);
   };
 
-  const handleDateFilter = (e) => {
-    setFilters(prev => ({
-      ...prev,
-      date: e.target.value
-    }));
+  const handlePageChange = (event, value) => {
+    setPage(value);
   };
 
-  const filterEvents = () => {
-    return events.filter(event => {
-      const matchesSearch = event.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-                          event.location.toLowerCase().includes(filters.search.toLowerCase());
-      const matchesCategory = filters.category === 'all' || event.category === filters.category;
-      
-      let matchesDate = true;
-      const eventDate = new Date(event.date);
-      const today = new Date();
-      
-      switch (filters.date) {
-        case 'today':
-          matchesDate = eventDate.toDateString() === today.toDateString();
-          break;
-        case 'week':
-          const nextWeek = new Date(today);
-          nextWeek.setDate(today.getDate() + 7);
-          matchesDate = eventDate >= today && eventDate <= nextWeek;
-          break;
-        case 'month':
-          const nextMonth = new Date(today);
-          nextMonth.setMonth(today.getMonth() + 1);
-          matchesDate = eventDate >= today && eventDate <= nextMonth;
-          break;
-        default:
-          matchesDate = true;
-      }
-
-      return matchesSearch && matchesCategory && matchesDate;
-    });
-  };
-
-  const filteredEvents = filterEvents();
-
-  if (isLoading) return <LoadingSpinner />;
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
-    <div className="events-container">
-      <div className="events-header">
-        <h1>Upcoming Events</h1>
-        <div className="filters">
-          <input
-            type="text"
-            placeholder="Search events..."
-            value={filters.search}
-            onChange={handleSearch}
-            className="search-input"
-          />
-          <select
-            value={filters.category}
-            onChange={handleCategoryChange}
-            className="category-filter"
-          >
-            <option value="all">All Categories</option>
-            <option value="Conference">Conference</option>
-            <option value="Workshop">Workshop</option>
-            <option value="Concert">Concert</option>
-            <option value="Exhibition">Exhibition</option>
-            <option value="Sports">Sports</option>
-            <option value="Other">Other</option>
-          </select>
-          <select
-            value={filters.date}
-            onChange={handleDateFilter}
-            className="date-filter"
-          >
-            <option value="all">All Dates</option>
-            <option value="today">Today</option>
-            <option value="week">This Week</option>
-            <option value="month">This Month</option>
-          </select>
-        </div>
-      </div>
-
-      {filteredEvents.length > 0 ? (
-        <div className="events-grid">
-          {filteredEvents.map(event => (
-            <EventCard
-              key={event._id}
-              event={event}
-              onClick={() => navigate(`/events/${event._id}`)}
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Box sx={{ mb: 4 }}>
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={8}>
+            <TextField
+              fullWidth
+              placeholder="Search events..."
+              value={searchTerm}
+              onChange={handleSearchChange}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+              }}
             />
-          ))}
-        </div>
-      ) : (
-        <div className="no-events">
-          <p>No events found matching your criteria</p>
-        </div>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              select
+              value={category}
+              onChange={handleCategoryChange}
+            >
+              {categories.map((cat) => (
+                <MenuItem key={cat} value={cat}>
+                  {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+        </Grid>
+      </Box>
+
+      <Grid container spacing={3}>
+        {events.map((event) => (
+          <Grid item xs={12} sm={6} md={4} key={event._id}>
+            <Card
+              component={Link}
+              to={`/events/${event._id}`}
+              sx={{
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                textDecoration: 'none',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  transition: 'transform 0.2s ease-in-out',
+                },
+              }}
+            >
+              <CardMedia
+                component="img"
+                height="200"
+                image={event.imageUrl}
+                alt={event.title}
+              />
+              <CardContent sx={{ flexGrow: 1 }}>
+                <Typography gutterBottom variant="h5" component="h2">
+                  {event.title}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  {event.description}
+                </Typography>
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    {format(new Date(event.date), 'PPP p')}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {event.location}
+                  </Typography>
+                  <Box sx={{ mt: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="h6" color="primary">
+                      ${event.price}
+                    </Typography>
+                    <Chip
+                      label={event.status}
+                      color={
+                        event.status === 'approved' ? 'success' :
+                        event.status === 'pending' ? 'warning' :
+                        'error'
+                      }
+                      size="small"
+                    />
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+
+      {totalPages > 1 && (
+        <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+          <Pagination
+            count={totalPages}
+            page={page}
+            onChange={handlePageChange}
+            color="primary"
+          />
+        </Box>
       )}
-    </div>
+    </Container>
   );
 };
 
