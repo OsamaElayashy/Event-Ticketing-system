@@ -40,10 +40,10 @@ function App() {
             <main className="main-content">
               <Routes>
                 {/* Public Routes */}
-                <Route path="/login" element={<><Navbar />,<LoginPage/>,<Footer /></>} />
-                <Route path="/register" element={<><Navbar />,<RegisterPage/>,<Footer /></>} />
-                <Route path="/forgot-password" element={<><Navbar />,<ForgotPasswordPage/>,<Footer /></>} />
-                <Route path="/unauthorized" element={<><Navbar />,<UnauthorizedPage/>,<Footer /></>} />
+                <Route path="/login" element={<><LoginPage/>,</>} />
+                <Route path="/register" element={<><RegisterPage/></>} />
+                <Route path="/forgot-password" element={<><ForgotPasswordPage/></>} />
+                <Route path="/unauthorized" element={<><UnauthorizedPage/></>} />
                 
                 {/* Event Routes */}
                 <Route path="/events" element={<EventList />} />
