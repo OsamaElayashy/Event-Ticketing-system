@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import UpdateProfileForm from './UpdateProfileForm';
+import { useAuth } from '../contexts/AuthContext';
+import UpdateProfileForm from '../components/profile/UpdateProfileForm';
 import './ProfilePage.css';
 
 const ProfilePage = () => {

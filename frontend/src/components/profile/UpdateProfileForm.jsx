@@ -1,119 +1,78 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { updateUserProfile } from '../../api/userApi';
-import './ProfilePage.css';
+import { TextField, Button, Box, Alert } from '@mui/material';
 
-const UpdateProfileForm = ({ user, onCancel }) => {
-  const { updateUser } = useAuth();
+const UpdateProfileForm = ({ onCancel }) => {
+  const { currentUser, updateUserProfile } = useAuth();
   const [formData, setFormData] = useState({
-    name: user.name,
-    email: user.email,
+    displayName: currentUser?.displayName || '',
+    email: currentUser?.email || '',
   });
-  const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    // Clear error when user types
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
-  };
-
-  const validate = () => {
-    const newErrors = {};
-    if (!formData.name.trim()) newErrors.name = 'Name is required';
-    if (!formData.email.trim()) newErrors.email = 'Email is required';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email';
-    }
-    return newErrors;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const validationErrors = validate();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
-
-    setIsSubmitting(true);
     try {
-      const updatedUser = await updateUserProfile(user._id, formData);
-      updateUser(updatedUser);
-      setSuccessMessage('Profile updated successfully!');
-      setTimeout(() => {
-        setSuccessMessage('');
-        onCancel();
-      }, 2000);
-    } catch (error) {
-      setErrors({ 
-        submit: error.response?.data?.message || 'Failed to update profile' 
-      });
+      setError('');
+      setLoading(true);
+      await updateUserProfile(formData);
+      onCancel();
+    } catch (err) {
+      setError('Failed to update profile');
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
   return (
-    <form className="update-profile-form" onSubmit={handleSubmit}>
-      <h2>Update Profile</h2>
+    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       
-      <div className="form-group">
-        <label htmlFor="name">Name</label>
-        <input
-          type="text"
-          id="name"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          className={errors.name ? 'error' : ''}
-        />
-        {errors.name && <span className="error-message">{errors.name}</span>}
-      </div>
+      <TextField
+        fullWidth
+        label="Display Name"
+        name="displayName"
+        value={formData.displayName}
+        onChange={handleChange}
+        margin="normal"
+      />
+      
+      <TextField
+        fullWidth
+        label="Email"
+        name="email"
+        type="email"
+        value={formData.email}
+        onChange={handleChange}
+        margin="normal"
+      />
 
-      <div className="form-group">
-        <label htmlFor="email">Email</label>
-        <input
-          type="email"
-          id="email"
-          name="email"
-          value={formData.email}
-          onChange={handleChange}
-          className={errors.email ? 'error' : ''}
-        />
-        {errors.email && <span className="error-message">{errors.email}</span>}
-      </div>
-
-      {errors.submit && (
-        <div className="form-error">{errors.submit}</div>
-      )}
-
-      {successMessage && (
-        <div className="form-success">{successMessage}</div>
-      )}
-
-      <div className="form-actions">
-        <button
-          type="button"
-          className="cancel-btn"
+      <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
+        <Button
+          type="submit"
+          variant="contained"
+          disabled={loading}
+        >
+          Update Profile
+        </Button>
+        <Button
+          variant="outlined"
           onClick={onCancel}
-          disabled={isSubmitting}
+          disabled={loading}
         >
           Cancel
-        </button>
-        <button
-          type="submit"
-          className="submit-btn"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? 'Updating...' : 'Save Changes'}
-        </button>
-      </div>
-    </form>
+        </Button>
+      </Box>
+    </Box>
   );
 };
 
