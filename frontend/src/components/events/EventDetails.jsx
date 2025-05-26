@@ -1,79 +1,59 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Container,
-  Paper,
-  Typography,
   Box,
+  Typography,
+  Paper,
   Grid,
   Button,
   Chip,
   CircularProgress,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Alert
+  Alert,
+  Divider
 } from '@mui/material';
-import { format } from 'date-fns';
 import { useAuth } from '../../contexts/AuthContext';
+import api from '../../api/api';
+import { EVENT_ENDPOINTS } from '../../config/api.config';
+import BookTicketForm from '../booking/BookTicketForm';
 
 const EventDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
+  const { user } = useAuth();
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
-  const [ticketCount, setTicketCount] = useState(1);
-  const [bookingError, setBookingError] = useState('');
+  const [showBookingForm, setShowBookingForm] = useState(false);
 
   useEffect(() => {
-    fetchEventDetails();
+    const fetchEvent = async () => {
+      try {
+        const response = await api.get(EVENT_ENDPOINTS.EVENT_BY_ID(id));
+        setEvent(response.data);
+      } catch (err) {
+        console.error('Error fetching event:', err);
+        setError(err.response?.data?.message || 'Failed to load event details');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvent();
   }, [id]);
 
-  const fetchEventDetails = async () => {
-    setLoading(true);
-    try {
-      // TODO: Implement API call to fetch event details
-      // Simulated API response
-      const response = {
-        _id: id,
-        title: 'Sample Event',
-        description: 'This is a detailed description of the event.',
-        date: new Date(),
-        location: 'Sample Location',
-        category: 'Music',
-        price: 50,
-        totalTickets: 100,
-        availableTickets: 75,
-        imageUrl: 'https://source.unsplash.com/random/800x600/?event',
-        status: 'approved',
-        organizer: {
-          _id: '1',
-          name: 'Sample Organizer'
-        }
-      };
-      
-      setEvent(response);
-    } catch (error) {
-      setError('Failed to load event details');
-    } finally {
-      setLoading(false);
-    }
+  const handleEdit = () => {
+    navigate(`/events/${id}/edit`);
   };
 
-  const handleBooking = async () => {
-    setBookingError('');
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this event?')) return;
+
     try {
-      // TODO: Implement API call to create booking
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setBookingDialogOpen(false);
-      navigate('/bookings');
-    } catch (error) {
-      setBookingError('Failed to create booking');
+      await api.delete(EVENT_ENDPOINTS.DELETE_EVENT(id));
+      navigate('/my-events');
+    } catch (err) {
+      console.error('Error deleting event:', err);
+      setError(err.response?.data?.message || 'Failed to delete event');
     }
   };
 
@@ -87,54 +67,78 @@ const EventDetails = () => {
 
   if (error) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
         <Alert severity="error">{error}</Alert>
-      </Container>
+      </Box>
     );
   }
 
   if (!event) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Typography variant="h5">Event not found</Typography>
-      </Container>
+      <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
+        <Alert severity="info">Event not found</Alert>
+      </Box>
     );
   }
 
-  const isOrganizer = currentUser?._id === event.organizer._id;
+  const isOrganizer = user?.role === 'Organizer' && event.organizerId === user._id;
+  const isPastEvent = new Date(event.date) < new Date();
+  const isSoldOut = event.bookedTickets >= event.capacity;
+  const isPending = event.status === 'pending';
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Grid container spacing={4}>
-        <Grid item xs={12} md={8}>
-          <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-            <Typography variant="h4" component="h1" gutterBottom>
+    <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
+      <Paper elevation={3} sx={{ p: 4, mb: 4 }}>
+        <Grid container spacing={4}>
+          <Grid item xs={12} md={8}>
+            <Typography variant="h4" gutterBottom>
               {event.title}
             </Typography>
+            
             <Box sx={{ mb: 2 }}>
-              <Chip
-                label={event.status}
-                color={
-                  event.status === 'approved' ? 'success' :
-                  event.status === 'pending' ? 'warning' :
-                  'error'
-                }
+              <Chip 
+                label={event.category.charAt(0).toUpperCase() + event.category.slice(1)}
+                color="primary"
                 sx={{ mr: 1 }}
               />
-              <Chip label={event.category} variant="outlined" />
+              {isPending && (
+                <Chip 
+                  label="Pending Approval"
+                  color="warning"
+                  sx={{ mr: 1 }}
+                />
+              )}
+              {isPastEvent && (
+                <Chip 
+                  label="Past Event"
+                  color="error"
+                  sx={{ mr: 1 }}
+                />
+              )}
+              {isSoldOut && (
+                <Chip 
+                  label="Sold Out"
+                  color="error"
+                />
+              )}
             </Box>
+
             <Typography variant="body1" paragraph>
               {event.description}
             </Typography>
+
+            <Divider sx={{ my: 3 }} />
+
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
                 <Typography variant="subtitle1" color="text.secondary">
                   Date & Time
                 </Typography>
                 <Typography variant="body1">
-                  {format(new Date(event.date), 'PPP p')}
+                  {new Date(event.date).toLocaleDateString()} at {event.time}
                 </Typography>
               </Grid>
+
               <Grid item xs={12} sm={6}>
                 <Typography variant="subtitle1" color="text.secondary">
                   Location
@@ -143,95 +147,96 @@ const EventDetails = () => {
                   {event.location}
                 </Typography>
               </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle1" color="text.secondary">
+                  Capacity
+                </Typography>
+                <Typography variant="body1">
+                  {event.bookedTickets} / {event.capacity} tickets booked
+                </Typography>
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle1" color="text.secondary">
+                  Price
+                </Typography>
+                <Typography variant="body1">
+                  ${event.price.toFixed(2)}
+                </Typography>
+              </Grid>
             </Grid>
-          </Paper>
+          </Grid>
 
-          {isOrganizer && (
-            <Box sx={{ mb: 3 }}>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={() => navigate(`/my-events/${id}/edit`)}
-                sx={{ mr: 2 }}
-              >
-                Edit Event
-              </Button>
-              <Button
-                variant="outlined"
-                color="error"
-                onClick={() => {/* TODO: Implement delete functionality */}}
-              >
-                Delete Event
-              </Button>
-            </Box>
-          )}
-        </Grid>
+          <Grid item xs={12} md={4}>
+            {event.imageUrl && (
+              <Box
+                component="img"
+                src={event.imageUrl}
+                alt={event.title}
+                sx={{
+                  width: '100%',
+                  height: 300,
+                  objectFit: 'cover',
+                  borderRadius: 1,
+                  mb: 2
+                }}
+              />
+            )}
 
-        <Grid item xs={12} md={4}>
-          <Paper elevation={3} sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Ticket Information
-            </Typography>
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" color="text.secondary">
-                Price per ticket
-              </Typography>
-              <Typography variant="h5" color="primary">
-                ${event.price}
-              </Typography>
-            </Box>
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" color="text.secondary">
-                Available tickets
-              </Typography>
-              <Typography variant="body1">
-                {event.availableTickets} of {event.totalTickets}
-              </Typography>
-            </Box>
-            {!isOrganizer && event.status === 'approved' && (
+            {isOrganizer ? (
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Button
+                  variant="contained"
+                  fullWidth
+                  onClick={handleEdit}
+                  disabled={isPastEvent || isPending}
+                >
+                  Edit Event
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  fullWidth
+                  onClick={handleDelete}
+                  disabled={isPastEvent || isPending}
+                >
+                  Delete Event
+                </Button>
+              </Box>
+            ) : (
               <Button
                 variant="contained"
                 fullWidth
-                onClick={() => setBookingDialogOpen(true)}
-                disabled={event.availableTickets === 0}
+                size="large"
+                onClick={() => setShowBookingForm(true)}
+                disabled={isPastEvent || isSoldOut || !user || isPending}
               >
-                Book Tickets
+                {!user ? 'Login to Book' :
+                  isPending ? 'Event Pending Approval' :
+                  isPastEvent ? 'Event has ended' :
+                  isSoldOut ? 'Sold Out' :
+                  'Book Tickets'}
               </Button>
             )}
-          </Paper>
+          </Grid>
         </Grid>
-      </Grid>
+      </Paper>
 
-      <Dialog open={bookingDialogOpen} onClose={() => setBookingDialogOpen(false)}>
-        <DialogTitle>Book Tickets</DialogTitle>
-        <DialogContent>
-          {bookingError && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {bookingError}
-            </Alert>
-          )}
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Number of Tickets"
-            type="number"
-            fullWidth
-            value={ticketCount}
-            onChange={(e) => setTicketCount(Math.max(1, Math.min(event.availableTickets, parseInt(e.target.value) || 1)))}
-            inputProps={{ min: 1, max: event.availableTickets }}
-          />
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-            Total: ${(event.price * ticketCount).toFixed(2)}
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setBookingDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleBooking} variant="contained">
-            Confirm Booking
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Container>
+      {showBookingForm && (
+        <BookTicketForm
+          event={event}
+          onClose={() => setShowBookingForm(false)}
+          onSuccess={() => {
+            setShowBookingForm(false);
+            // Refresh event data
+            api.get(EVENT_ENDPOINTS.EVENT_BY_ID(id))
+              .then(response => setEvent(response.data))
+              .catch(err => console.error('Error refreshing event:', err));
+          }}
+        />
+      )}
+    </Box>
   );
 };
 

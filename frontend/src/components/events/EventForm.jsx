@@ -1,66 +1,114 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import api from '../../api/api';
-import { toast } from 'react-toastify';
+import React, { useState } from 'react';
 import {
-  Container,
-  Paper,
-  Typography,
+  Box,
   TextField,
   Button,
-  Box,
   Grid,
+  Typography,
   MenuItem,
   Alert,
   CircularProgress
 } from '@mui/material';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider, DateTimePicker } from '@mui/x-date-pickers';
-import './EventForm.css'
+import { useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import api from '../../api/api';
+import { EVENT_ENDPOINTS } from '../../config/api.config';
 
-const EventForm = ({ isEdit = false, eventData = null }) => {
-  const { id } = useParams();
+const categories = [
+  'music',
+  'sports',
+  'arts',
+  'conference',
+  'workshop',
+  'other'
+];
+
+const EventForm = ({ isEditing = false }) => {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    date: new Date(),
-    location: '',
-    totalTickets: '',
-    price: '',
     category: '',
-    ...eventData
+    date: '',
+    time: '',
+    location: '',
+    capacity: '',
+    price: '',
+    imageUrl: ''
   });
 
-  const categories = [
-    'Music',
-    'Sports',
-    'Arts',
-    'Food',
-    'Technology',
-    'Business',
-    'Other'
-  ];
+  const [errors, setErrors] = useState({});
 
-  useEffect(() => {
-    if (isEdit) {
-      const fetchEvent = async () => {
+  // Fetch event data if editing
+  React.useEffect(() => {
+    const fetchEvent = async () => {
+      if (isEditing && id) {
         try {
-          const response = await api.get(`/events/${id}`);
+          const response = await api.get(EVENT_ENDPOINTS.EVENT_BY_ID(id));
+          const event = response.data;
           setFormData({
-            ...response.data,
-            date: new Date(response.data.date)
+            title: event.title || '',
+            description: event.description || '',
+            category: event.category || '',
+            date: event.date ? new Date(event.date).toISOString().split('T')[0] : '',
+            time: event.time || '',
+            location: event.location || '',
+            capacity: event.capacity || '',
+            price: event.price || '',
+            imageUrl: event.imageUrl || ''
           });
-        } catch (error) {
-          toast.error('Failed to load event data');
-          navigate('/my-events');
+        } catch (err) {
+          console.error('Error fetching event:', err);
+          setError(err.response?.data?.message || 'Failed to load event details');
         }
-      };
-      fetchEvent();
+      }
+    };
+
+    fetchEvent();
+  }, [isEditing, id]);
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.title.trim()) {
+      newErrors.title = 'Title is required';
     }
-  }, [id, isEdit, navigate]);
+
+    if (!formData.description.trim()) {
+      newErrors.description = 'Description is required';
+    }
+
+    if (!formData.category) {
+      newErrors.category = 'Category is required';
+    }
+
+    if (!formData.date) {
+      newErrors.date = 'Date is required';
+    }
+
+    if (!formData.time) {
+      newErrors.time = 'Time is required';
+    }
+
+    if (!formData.location.trim()) {
+      newErrors.location = 'Location is required';
+    }
+
+    if (!formData.capacity || formData.capacity < 1) {
+      newErrors.capacity = 'Capacity must be at least 1';
+    }
+
+    if (formData.price < 0) {
+      newErrors.price = 'Price cannot be negative';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -68,169 +116,216 @@ const EventForm = ({ isEdit = false, eventData = null }) => {
       ...prev,
       [name]: value
     }));
-  };
-
-  const handleDateChange = (newDate) => {
-    setFormData(prev => ({
-      ...prev,
-      date: newDate
-    }));
+    // Clear error when user types
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateForm()) return;
+
     setLoading(true);
     setError('');
 
     try {
-      const endpoint = isEdit ? `/events/${id}` : '/events';
-      const method = isEdit ? 'put' : 'post';
-      
-      await api[method](endpoint, {
+      // Prepare the event data
+      const eventData = {
         ...formData,
-        date: formData.date.toISOString()
-      });
+        organizerId: user._id,
+        status: 'pending', // New events start as pending
+        bookedTickets: 0 // Initialize booked tickets count
+      };
 
-      toast.success(`Event ${isEdit ? 'updated' : 'created'} successfully!`);
-      navigate(isEdit ? '/my-events' : '/events');
+      let response;
+      if (isEditing) {
+        response = await api.put(EVENT_ENDPOINTS.UPDATE_EVENT(id), eventData);
+        navigate(`/events/${id}`);
+      } else {
+        response = await api.post(EVENT_ENDPOINTS.CREATE_EVENT, eventData);
+        navigate(`/events/${response.data._id}`);
+      }
+
+      // Show success message or handle any post-creation tasks
+      console.log('Event saved successfully:', response.data);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to save event');
+      console.error('Error saving event:', err);
+      setError(err.response?.data?.message || 'Failed to save event. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
-      <Paper elevation={3} sx={{ p: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          {isEdit ? 'Edit Event' : 'Create New Event'}
-        </Typography>
+    <Box component="form" onSubmit={handleSubmit} sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
+      <Typography variant="h4" gutterBottom>
+        {isEditing ? 'Edit Event' : 'Create New Event'}
+      </Typography>
 
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
 
-        <Box component="form" onSubmit={handleSubmit}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
-              <TextField
-                required
-                fullWidth
-                label="Event Title"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-              />
-            </Grid>
+      <Grid container spacing={3}>
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            label="Event Title"
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
+            error={!!errors.title}
+            helperText={errors.title}
+            required
+          />
+        </Grid>
 
-            <Grid item xs={12}>
-              <TextField
-                required
-                fullWidth
-                multiline
-                rows={4}
-                label="Description"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-              />
-            </Grid>
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            label="Description"
+            name="description"
+            multiline
+            rows={4}
+            value={formData.description}
+            onChange={handleChange}
+            error={!!errors.description}
+            helperText={errors.description}
+            required
+          />
+        </Grid>
 
-            <Grid item xs={12} md={6}>
-              <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <DateTimePicker
-                  label="Event Date & Time"
-                  value={formData.date}
-                  onChange={handleDateChange}
-                  renderInput={(params) => <TextField {...params} fullWidth required />}
-                />
-              </LocalizationProvider>
-            </Grid>
+        <Grid item xs={12} sm={6}>
+          <TextField
+            fullWidth
+            select
+            label="Category"
+            name="category"
+            value={formData.category}
+            onChange={handleChange}
+            error={!!errors.category}
+            helperText={errors.category}
+            required
+          >
+            {categories.map((category) => (
+              <MenuItem key={category} value={category}>
+                {category.charAt(0).toUpperCase() + category.slice(1)}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Grid>
 
-            <Grid item xs={12} md={6}>
-              <TextField
-                required
-                fullWidth
-                label="Location"
-                name="location"
-                value={formData.location}
-                onChange={handleChange}
-              />
-            </Grid>
+        <Grid item xs={12} sm={6}>
+          <TextField
+            fullWidth
+            label="Location"
+            name="location"
+            value={formData.location}
+            onChange={handleChange}
+            error={!!errors.location}
+            helperText={errors.location}
+            required
+          />
+        </Grid>
 
-            <Grid item xs={12} md={6}>
-              <TextField
-                required
-                fullWidth
-                type="number"
-                label="Total Tickets"
-                name="totalTickets"
-                value={formData.totalTickets}
-                onChange={handleChange}
-                inputProps={{ min: 1 }}
-              />
-            </Grid>
+        <Grid item xs={12} sm={6}>
+          <TextField
+            fullWidth
+            label="Date"
+            name="date"
+            type="date"
+            value={formData.date}
+            onChange={handleChange}
+            error={!!errors.date}
+            helperText={errors.date}
+            required
+            InputLabelProps={{ shrink: true }}
+          />
+        </Grid>
 
-            <Grid item xs={12} md={6}>
-              <TextField
-                required
-                fullWidth
-                type="number"
-                label="Price per Ticket"
-                name="price"
-                value={formData.price}
-                onChange={handleChange}
-                inputProps={{ min: 0, step: 0.01 }}
-              />
-            </Grid>
+        <Grid item xs={12} sm={6}>
+          <TextField
+            fullWidth
+            label="Time"
+            name="time"
+            type="time"
+            value={formData.time}
+            onChange={handleChange}
+            error={!!errors.time}
+            helperText={errors.time}
+            required
+            InputLabelProps={{ shrink: true }}
+          />
+        </Grid>
 
-            <Grid item xs={12}>
-              <TextField
-                required
-                fullWidth
-                select
-                label="Category"
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-              >
-                {categories.map((category) => (
-                  <MenuItem key={category} value={category}>
-                    {category}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
+        <Grid item xs={12} sm={6}>
+          <TextField
+            fullWidth
+            label="Capacity"
+            name="capacity"
+            type="number"
+            value={formData.capacity}
+            onChange={handleChange}
+            error={!!errors.capacity}
+            helperText={errors.capacity}
+            required
+            inputProps={{ min: 1 }}
+          />
+        </Grid>
 
-            <Grid item xs={12}>
-              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-                <Button
-                  variant="outlined"
-                  onClick={() => navigate(-1)}
-                  disabled={loading}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  variant="contained"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <CircularProgress size={24} />
-                  ) : (
-                    isEdit ? 'Update Event' : 'Create Event'
-                  )}
-                </Button>
-              </Box>
-            </Grid>
-          </Grid>
-        </Box>
-      </Paper>
-    </Container>
+        <Grid item xs={12} sm={6}>
+          <TextField
+            fullWidth
+            label="Price"
+            name="price"
+            type="number"
+            value={formData.price}
+            onChange={handleChange}
+            error={!!errors.price}
+            helperText={errors.price}
+            inputProps={{ min: 0, step: 0.01 }}
+          />
+        </Grid>
+
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            label="Image URL"
+            name="imageUrl"
+            value={formData.imageUrl}
+            onChange={handleChange}
+            placeholder="https://example.com/image.jpg"
+          />
+        </Grid>
+      </Grid>
+
+      <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+        <Button
+          variant="outlined"
+          onClick={() => navigate(-1)}
+          disabled={loading}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          variant="contained"
+          disabled={loading}
+        >
+          {loading ? (
+            <CircularProgress size={24} />
+          ) : (
+            isEditing ? 'Update Event' : 'Create Event'
+          )}
+        </Button>
+      </Box>
+    </Box>
   );
 };
 

@@ -51,13 +51,16 @@ function App() {
                 <Route path="/unauthorized" element={<UnauthorizedPage />} />
                 
                 {/* Event Routes */}
-                <Route path="/events" element={<EventList />} />
+                <Route path="/events" element={<EventList />}>
+                  <Route index element={<EventList />} />
+                  <Route path="new" element={<EventForm />} />
+                </Route>
                 <Route path="/events/:id" element={<EventDetails />} />
 
                 {/* User Bookings Routes */}
                 <Route path="/bookings" element={<PrivateRoute roles={['user']} />}>
-                <Route index element={<UserBookingsPage />} />
-                <Route path=":id" element={<BookingDetails />} />
+                  <Route index element={<UserBookingsPage />} />
+                  <Route path=":id" element={<BookingDetails />} />
                 </Route>
                 
                 {/* Profile Route - Accessible to all authenticated users */}
@@ -68,8 +71,8 @@ function App() {
                 {/* Organizer-only Routes */}
                 <Route path="/my-events" element={<PrivateRoute roles={['organizer']} />}>
                   <Route index element={<MyEventsPage />} />
-                  <Route path="new" element={<EventForm />} />
-                  <Route path=":id/edit" element={<EventForm isEdit />} />
+                  <Route path="create" element={<EventForm />} />
+                  <Route path=":id/edit" element={<EventForm isEditing />} />
                 </Route>
                 
                 {/* Admin-only Routes */}
