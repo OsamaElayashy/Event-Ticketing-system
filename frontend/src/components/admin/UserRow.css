@@ -1,0 +1,90 @@
+.user-row {
+  display: grid;
+  grid-template-columns: 2fr 2fr 1fr 1fr;
+  padding: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  align-items: center;
+  transition: background-color 0.2s;
+}
+
+.user-row:hover {
+  background-color: #f7fafc;
+}
+
+.user-name {
+  font-weight: 500;
+  color: #2d3748;
+}
+
+.user-email {
+  color: #4a5568;
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.role-badge.admin {
+  background-color: #fed7d7;
+  color: #c53030;
+}
+
+.role-badge.organizer {
+  background-color: #c6f6d5;
+  color: #2f855a;
+}
+
+.role-badge.user {
+  background-color: #e2e8f0;
+  color: #4a5568;
+}
+
+.user-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.action-button {
+  padding: 0.5rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.action-button.update {
+  background-color: #4299e1;
+  color: white;
+}
+
+.action-button.update:hover {
+  background-color: #3182ce;
+}
+
+.action-button.delete {
+  background-color: #f56565;
+  color: white;
+}
+
+.action-button.delete:hover {
+  background-color: #e53e3e;
+}
+
+@media (max-width: 768px) {
+  .user-row {
+    grid-template-columns: 2fr 2fr 1fr;
+  }
+
+  .user-actions {
+    display: none;
+  }
+
+  .user-row:active {
+    background-color: #edf2f7;
+  }
+} 

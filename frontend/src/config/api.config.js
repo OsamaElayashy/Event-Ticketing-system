@@ -12,15 +12,19 @@ export const AUTH_ENDPOINTS = {
 // User endpoints
 export const USER_ENDPOINTS = {
   REGISTER: '/users/register',
-  PROFILE: '/users/profile',
-  UPDATE_PROFILE: '/users/profile',
+  GET_PROFILE: '/users/current',
+  UPDATE_PROFILE: '/users/me',
   ALL_USERS: '/users',
   USER_BY_ID: (id) => `/users/${id}`,
   UPDATE_USER: (id) => `/users/${id}`,
   DELETE_USER: (id) => `/users/${id}`,
   FORGOT_PASSWORD: '/users/forgot-password',
   VERIFY_RESET_CODE: '/users/verify-reset-code',
-  RESET_PASSWORD: '/users/reset-password'
+  RESET_PASSWORD: '/users/reset-password',
+  // Stats endpoints
+  ADMIN_STATS: '/users/stats/admin',
+  ORGANIZER_STATS: '/users/stats/organizer',
+  USER_STATS: '/users/stats/user'
 };
 
 // Event endpoints
