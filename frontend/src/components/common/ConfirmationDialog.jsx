@@ -1,5 +1,5 @@
-import React from 'react';
-import './Common.css';
+import PropTypes from 'prop-types';
+import './ConfirmationDialog.css';
 
 const ConfirmationDialog = ({
   title,
@@ -8,39 +8,46 @@ const ConfirmationDialog = ({
   cancelLabel = 'Cancel',
   onConfirm,
   onCancel,
-  isDestructive = false
+  isDestructive = false,
 }) => {
   return (
-    <div className="modal-overlay">
-      <div className="modal-content confirmation-dialog">
-        <div className="modal-header">
+    <div className="dialog-overlay">
+      <div className="dialog-content">
+        <div className="dialog-header">
           <h2>{title}</h2>
-          <button className="close-button" onClick={onCancel}>×</button>
+          <button className="close-button" onClick={onCancel}>
+            ×
+          </button>
         </div>
 
-        <div className="modal-body">
-          <p className="confirmation-message">{message}</p>
+        <div className="dialog-body">
+          <p>{message}</p>
+        </div>
 
-          <div className="modal-actions">
-            <button
-              type="button"
-              className="cancel-button"
-              onClick={onCancel}
-            >
-              {cancelLabel}
-            </button>
-            <button
-              type="button"
-              className={`confirm-button ${isDestructive ? 'destructive' : ''}`}
-              onClick={onConfirm}
-            >
-              {confirmLabel}
-            </button>
-          </div>
+        <div className="dialog-footer">
+          <button className="cancel-button" onClick={onCancel}>
+            {cancelLabel}
+          </button>
+          <button
+            className={`confirm-button ${isDestructive ? 'destructive' : ''}`}
+            onClick={onConfirm}
+          >
+            {confirmLabel}
+          </button>
         </div>
       </div>
     </div>
   );
+};
+
+ConfirmationDialog.propTypes = {
+  title: PropTypes.string.isRequired,
+  message: PropTypes.string.isRequired,
+  confirmLabel: PropTypes.string,
+  cancelLabel: PropTypes.string,
+  onConfirm: PropTypes.func.isRequired,
+  onCancel: PropTypes.func.isRequired,
+  isDestructive: PropTypes.bool,
 };
 
 export default ConfirmationDialog; 

@@ -1,195 +1,120 @@
-import { useState } from 'react';
-import { toast } from 'react-toastify';
+import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import './Profile.css';
+import { updateUserProfile } from '../../api/userApi';
+import './ProfilePage.css';
 
-const UpdateProfileForm = ({ user, onCancel, onSuccess }) => {
+const UpdateProfileForm = ({ user, onCancel }) => {
+  const { updateUser } = useAuth();
   const [formData, setFormData] = useState({
-    firstName: user.firstName || '',
-    lastName: user.lastName || '',
-    email: user.email || '',
-    currentPassword: '',
-    newPassword: '',
-    confirmNewPassword: ''
+    name: user.name,
+    email: user.email,
   });
   const [errors, setErrors] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
-  const { updateProfile } = useAuth();
-
-  const validateForm = () => {
-    const newErrors = {};
-    
-    if (!formData.firstName) newErrors.firstName = 'First name is required';
-    if (!formData.lastName) newErrors.lastName = 'Last name is required';
-    if (!formData.email) newErrors.email = 'Email is required';
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Please enter a valid email';
-
-    // Only validate password fields if any password field is filled
-    if (formData.newPassword || formData.confirmNewPassword || formData.currentPassword) {
-      if (!formData.currentPassword) newErrors.currentPassword = 'Current password is required to change password';
-      if (formData.newPassword && formData.newPassword.length < 8) {
-        newErrors.newPassword = 'New password must be at least 8 characters';
-      }
-      if (formData.newPassword !== formData.confirmNewPassword) {
-        newErrors.confirmNewPassword = 'Passwords do not match';
-      }
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear error when user types
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const validate = () => {
+    const newErrors = {};
+    if (!formData.name.trim()) newErrors.name = 'Name is required';
+    if (!formData.email.trim()) newErrors.email = 'Email is required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email';
+    }
+    return newErrors;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!validateForm()) return;
-    
-    setIsLoading(true);
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
-      await updateProfile({
-        ...formData,
-        // Only include password fields if changing password
-        ...(formData.newPassword ? {
-          currentPassword: formData.currentPassword,
-          newPassword: formData.newPassword
-        } : {})
-      });
-      
-      toast.success('Profile updated successfully!');
-      onSuccess();
+      const updatedUser = await updateUserProfile(user._id, formData);
+      updateUser(updatedUser);
+      setSuccessMessage('Profile updated successfully!');
+      setTimeout(() => {
+        setSuccessMessage('');
+        onCancel();
+      }, 2000);
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update profile');
+      setErrors({ 
+        submit: error.response?.data?.message || 'Failed to update profile' 
+      });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="update-profile-form">
-      <div className="form-section">
-        <h2>Personal Information</h2>
-        
-        <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="firstName">First Name</label>
-            <input
-              type="text"
-              id="firstName"
-              name="firstName"
-              value={formData.firstName}
-              onChange={handleChange}
-              className={errors.firstName ? 'error' : ''}
-            />
-            {errors.firstName && <span className="error-message">{errors.firstName}</span>}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="lastName">Last Name</label>
-            <input
-              type="text"
-              id="lastName"
-              name="lastName"
-              value={formData.lastName}
-              onChange={handleChange}
-              className={errors.lastName ? 'error' : ''}
-            />
-            {errors.lastName && <span className="error-message">{errors.lastName}</span>}
-          </div>
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="email">Email Address</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            className={errors.email ? 'error' : ''}
-          />
-          {errors.email && <span className="error-message">{errors.email}</span>}
-        </div>
+    <form className="update-profile-form" onSubmit={handleSubmit}>
+      <h2>Update Profile</h2>
+      
+      <div className="form-group">
+        <label htmlFor="name">Name</label>
+        <input
+          type="text"
+          id="name"
+          name="name"
+          value={formData.name}
+          onChange={handleChange}
+          className={errors.name ? 'error' : ''}
+        />
+        {errors.name && <span className="error-message">{errors.name}</span>}
       </div>
 
-      <div className="form-section">
-        <h2>Change Password</h2>
-        <p className="section-description">Leave blank if you don't want to change your password</p>
-
-        <div className="form-group">
-          <label htmlFor="currentPassword">Current Password</label>
-          <input
-            type="password"
-            id="currentPassword"
-            name="currentPassword"
-            value={formData.currentPassword}
-            onChange={handleChange}
-            className={errors.currentPassword ? 'error' : ''}
-          />
-          {errors.currentPassword && <span className="error-message">{errors.currentPassword}</span>}
-        </div>
-
-        <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="newPassword">New Password</label>
-            <input
-              type="password"
-              id="newPassword"
-              name="newPassword"
-              value={formData.newPassword}
-              onChange={handleChange}
-              className={errors.newPassword ? 'error' : ''}
-            />
-            {errors.newPassword && <span className="error-message">{errors.newPassword}</span>}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="confirmNewPassword">Confirm New Password</label>
-            <input
-              type="password"
-              id="confirmNewPassword"
-              name="confirmNewPassword"
-              value={formData.confirmNewPassword}
-              onChange={handleChange}
-              className={errors.confirmNewPassword ? 'error' : ''}
-            />
-            {errors.confirmNewPassword && (
-              <span className="error-message">{errors.confirmNewPassword}</span>
-            )}
-          </div>
-        </div>
+      <div className="form-group">
+        <label htmlFor="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          value={formData.email}
+          onChange={handleChange}
+          className={errors.email ? 'error' : ''}
+        />
+        {errors.email && <span className="error-message">{errors.email}</span>}
       </div>
+
+      {errors.submit && (
+        <div className="form-error">{errors.submit}</div>
+      )}
+
+      {successMessage && (
+        <div className="form-success">{successMessage}</div>
+      )}
 
       <div className="form-actions">
-        <button 
-          type="button" 
-          className="cancel-button"
+        <button
+          type="button"
+          className="cancel-btn"
           onClick={onCancel}
-          disabled={isLoading}
+          disabled={isSubmitting}
         >
           Cancel
         </button>
-        <button 
-          type="submit" 
-          className="save-button"
-          disabled={isLoading}
+        <button
+          type="submit"
+          className="submit-btn"
+          disabled={isSubmitting}
         >
-          {isLoading ? (
-            <span className="loading-spinner"></span>
-          ) : (
-            'Save Changes'
-          )}
+          {isSubmitting ? 'Updating...' : 'Save Changes'}
         </button>
       </div>
     </form>
   );
 };
 
-export default UpdateProfileForm; 
+export default UpdateProfileForm;

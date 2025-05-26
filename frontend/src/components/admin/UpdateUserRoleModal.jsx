@@ -1,30 +1,13 @@
 import { useState } from 'react';
-import { toast } from 'react-toastify';
-import { useAuth } from '../../contexts/AuthContext';
-import './Admin.css';
+import PropTypes from 'prop-types';
+import './UpdateUserRoleModal.css';
 
-const UpdateUserRoleModal = ({ user, onClose, onUpdate }) => {
+const UpdateUserRoleModal = ({ user, onClose, onUpdateRole }) => {
   const [selectedRole, setSelectedRole] = useState(user.role);
-  const [isLoading, setIsLoading] = useState(false);
-  const { updateUserRole } = useAuth();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (selectedRole === user.role) {
-      onClose();
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const updatedUser = await updateUserRole(user.id, selectedRole);
-      toast.success('User role updated successfully');
-      onUpdate(updatedUser);
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update user role');
-    } finally {
-      setIsLoading(false);
-    }
+    onUpdateRole(user._id, selectedRole);
   };
 
   return (
@@ -32,82 +15,58 @@ const UpdateUserRoleModal = ({ user, onClose, onUpdate }) => {
       <div className="modal-content">
         <div className="modal-header">
           <h2>Update User Role</h2>
-          <button className="close-button" onClick={onClose}>×</button>
+          <button className="close-button" onClick={onClose}>
+            ×
+          </button>
         </div>
 
-        <div className="modal-body">
-          <p className="user-info">
-            Updating role for <strong>{user.firstName} {user.lastName}</strong>
-          </p>
-
-          <form onSubmit={handleSubmit}>
-            <div className="role-options modal-roles">
-              <div className="role-option">
-                <input
-                  type="radio"
-                  id="user-role"
-                  name="role"
-                  value="StandardUser"
-                  checked={selectedRole === 'StandardUser'}
-                  onChange={(e) => setSelectedRole(e.target.value)}
-                />
-                <label htmlFor="user-role">User</label>
-                <p className="role-description">Book tickets and attend events</p>
-              </div>
-
-              <div className="role-option">
-                <input
-                  type="radio"
-                  id="organizer-role"
-                  name="role"
-                  value="Organizer"
-                  checked={selectedRole === 'Organizer'}
-                  onChange={(e) => setSelectedRole(e.target.value)}
-                />
-                <label htmlFor="organizer-role">Organizer</label>
-                <p className="role-description">Create and manage events</p>
-              </div>
-
-              <div className="role-option">
-                <input
-                  type="radio"
-                  id="admin-role"
-                  name="role"
-                  value="Admin"
-                  checked={selectedRole === 'Admin'}
-                  onChange={(e) => setSelectedRole(e.target.value)}
-                />
-                <label htmlFor="admin-role">Admin</label>
-                <p className="role-description">Manage users and events</p>
-              </div>
-            </div>
-
-            <div className="modal-actions">
-              <button
-                type="button"
-                className="cancel-button"
-                onClick={onClose}
-                disabled={isLoading}
+        <form onSubmit={handleSubmit}>
+          <div className="modal-body">
+            <p>
+              Update role for user: <strong>{user.name}</strong>
+            </p>
+            
+            <div className="form-group">
+              <label htmlFor="role">Select Role:</label>
+              <select
+                id="role"
+                value={selectedRole}
+                onChange={(e) => setSelectedRole(e.target.value)}
+                className="role-select"
               >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="save-button"
-                disabled={isLoading || selectedRole === user.role}
-              >
-                {isLoading ? (
-                  <span className="loading-spinner"></span>
-                ) : (
-                  'Update Role'
-                )}
-              </button>
+                <option value="User">User</option>
+                <option value="Organizer">Organizer</option>
+                <option value="Admin">Admin</option>
+              </select>
             </div>
-          </form>
-        </div>
+          </div>
+
+          <div className="modal-footer">
+            <button type="button" className="cancel-button" onClick={onClose}>
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="update-button"
+              disabled={selectedRole === user.role}
+            >
+              Update Role
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
+};
+
+UpdateUserRoleModal.propTypes = {
+  user: PropTypes.shape({
+    _id: PropTypes.string.isRequired,
+    name: PropTypes.string.isRequired,
+    role: PropTypes.string.isRequired,
+  }).isRequired,
+  onClose: PropTypes.func.isRequired,
+  onUpdateRole: PropTypes.func.isRequired,
 };
 
 export default UpdateUserRoleModal; 

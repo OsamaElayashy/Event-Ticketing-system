@@ -1,6 +1,6 @@
-const userModel = require("../models/userModel");
-const bookingModel = require("../models/bookingModel");
-const eventModel = require("../models/eventModel");
+const userModel = require("../Models/userModel");
+const bookingModel = require("../Models/bookingModel");
+const eventModel = require("../Models/eventModel");
 
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
@@ -146,12 +146,20 @@ const userController = {
       return res.status(500).json({ message: error.message });
     }
   },
-  getCurrentUser: (req, res) => {
-    res.send(req.user);
+  getCurrentUser: async (req, res) => {
+    try {
+      const user = await userModel.findById(req.user.userId).select('-password');
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      return res.status(200).json(user);
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
   },
   getUserBookings: async (req, res) => {
     try {
-      const bookings = await Booking.find({ user: req.user.userId }).populate('event');
+      const bookings = await bookingModel.find({ user: req.user.userId }).populate('event');
       if (!bookings) {
         return res.status(404).json({ message: "No bookings found" });
       }
@@ -162,7 +170,7 @@ const userController = {
   },
   getUserEvents: async (req, res) => {
     try {
-      const events = await eventModel.find({ Organizer: req.user.userId });
+      const events = await eventModel.find({ organizer: req.user.userId });
       if (!events) {
         return res.status(404).json({ message: "No events found" });
       }
@@ -173,7 +181,7 @@ const userController = {
   },
   getUserEventAnalytics: async (req, res) => {
     try {
-      const events = await eventModel.find({ Organizer: req.user.userId });
+      const events = await eventModel.find({ organizer: req.user.userId });
       if (events.length === 0) {
         return res.status(404).json({ message: "No events found" });
       }
@@ -185,7 +193,7 @@ const userController = {
             title: event.title,
             totalBookings: bookings.length,
             totalRevenue: bookings.reduce(
-              (sum, booking) => sum + booking.totalPrice,
+              (sum, booking) => sum + (booking.totalAmount || 0),
               0
             ),
             remainingTickets: event.remainingTickets,
@@ -200,27 +208,29 @@ const userController = {
   },
   updateCurrentUser: async (req, res) => {
     try {
-      const { name, email, age } = req.body;
-      const updates = {};
-      
-      if (name) updates.name = name;
-      if (email) updates.email = email;
-      if (age) updates.age = age;
+      const { name, phone, bio, organizationName, organizationType, website } = req.body;
+      const updateData = {
+        name,
+        phone,
+        bio,
+        ...(req.user.role === 'Organizer' && {
+          organizationName,
+          organizationType,
+          website
+        })
+      };
 
-      const updatedUser = await userModel.findByIdAndUpdate(
+      const user = await userModel.findByIdAndUpdate(
         req.user.userId,
-        updates,
+        updateData,
         { new: true }
-      );
+      ).select('-password');
 
-      if (!updatedUser) {
-        return res.status(404).json({ message: 'User not found' });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
       }
 
-      return res.status(200).json({ 
-        user: updatedUser, 
-        message: "Profile updated successfully" 
-      });
+      return res.status(200).json(user);
     } catch (error) {
       return res.status(500).json({ message: error.message });
     }
@@ -229,6 +239,77 @@ const userController = {
     // Placeholder implementation
     return res.status(501).json({ message: 'Not implemented yet.' });
   },
+  getAdminStats: async (req, res) => {
+    try {
+      const [users, events, bookings] = await Promise.all([
+        userModel.countDocuments(),
+        eventModel.find(),
+        bookingModel.countDocuments()
+      ]);
+
+      const pendingEvents = events.filter(event => event.status === 'pending').length;
+      const totalEvents = events.length;
+
+      return res.status(200).json({
+        totalUsers: users,
+        totalEvents,
+        pendingEvents,
+        totalBookings: bookings
+      });
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  },
+  getOrganizerStats: async (req, res) => {
+    try {
+      const events = await eventModel.find({ organizer: req.user.userId });
+      const activeEvents = events.filter(event => 
+        new Date(event.date) >= new Date() && event.status === 'approved'
+      ).length;
+
+      const bookings = await bookingModel.find({
+        event: { $in: events.map(event => event._id) }
+      });
+
+      const totalRevenue = bookings.reduce((sum, booking) => sum + (booking.totalAmount || 0), 0);
+
+      return res.status(200).json({
+        totalEvents: events.length,
+        activeEvents,
+        totalTicketsSold: bookings.length,
+        totalRevenue
+      });
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  },
+  getUserStats: async (req, res) => {
+    try {
+      const bookings = await bookingModel
+        .find({ user: req.user.userId })
+        .populate('event');
+
+      const now = new Date();
+      const eventsAttended = bookings.filter(booking => 
+        booking.event && new Date(booking.event.date) < now
+      ).length;
+
+      const upcomingEvents = bookings.filter(booking => 
+        booking.event && new Date(booking.event.date) >= now
+      ).length;
+
+      const totalSpent = bookings.reduce((sum, booking) => sum + (booking.totalAmount || 0), 0);
+
+      return res.status(200).json({
+        eventsAttended,
+        upcomingEvents,
+        totalBookings: bookings.length,
+        totalSpent
+      });
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  }
 };
 
 module.exports = userController;

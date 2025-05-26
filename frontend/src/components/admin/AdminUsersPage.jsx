@@ -1,12 +1,18 @@
 import { useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import api from '../../api/api';
+import { USER_ENDPOINTS } from '../../config/api.config';
 import UserRow from './UserRow';
 import UpdateUserRoleModal from './UpdateUserRoleModal';
 import ConfirmationDialog from '../common/ConfirmationDialog';
-import { useAuth } from '../../contexts/AuthContext';
-import './Admin.css';
+import LoadingSpinner from '../common/LoadingSpinner';
+import { toast } from 'react-toastify';
+import './AdminUsersPage.css';
 
 const AdminUsersPage = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -14,16 +20,20 @@ const AdminUsersPage = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
-  const { fetchUsers, deleteUser } = useAuth();
 
   useEffect(() => {
-    loadUsers();
-  }, []);
+    if (user?.role !== 'Admin') {
+      navigate('/unauthorized');
+      return;
+    }
 
-  const loadUsers = async () => {
+    fetchUsers();
+  }, [user, navigate]);
+
+  const fetchUsers = async () => {
     try {
-      const data = await fetchUsers();
-      setUsers(data);
+      const response = await api.get(USER_ENDPOINTS.ALL_USERS);
+      setUsers(response.data);
     } catch (error) {
       toast.error('Failed to load users');
     } finally {
@@ -31,100 +41,90 @@ const AdminUsersPage = () => {
     }
   };
 
-  const handleUpdateRole = (user) => {
-    setSelectedUser(user);
-    setShowRoleModal(true);
-  };
-
-  const handleDeleteClick = (user) => {
-    setSelectedUser(user);
-    setShowDeleteDialog(true);
-  };
-
-  const handleDeleteConfirm = async () => {
+  const handleUpdateRole = async (userId, newRole) => {
     try {
-      await deleteUser(selectedUser.id);
-      setUsers(users.filter(u => u.id !== selectedUser.id));
-      toast.success('User deleted successfully');
+      await api.put(USER_ENDPOINTS.UPDATE_USER(userId), { role: newRole });
+      toast.success('User role updated successfully');
+      fetchUsers();
+      setShowRoleModal(false);
     } catch (error) {
-      toast.error('Failed to delete user');
-    } finally {
-      setShowDeleteDialog(false);
-      setSelectedUser(null);
+      toast.error('Failed to update user role');
     }
   };
 
-  const handleRoleUpdate = (updatedUser) => {
-    setUsers(users.map(user => 
-      user.id === updatedUser.id ? updatedUser : user
-    ));
-    setShowRoleModal(false);
-    setSelectedUser(null);
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
+
+    try {
+      await api.delete(USER_ENDPOINTS.DELETE_USER(selectedUser._id));
+      toast.success('User deleted successfully');
+      fetchUsers();
+      setShowDeleteDialog(false);
+    } catch (error) {
+      toast.error('Failed to delete user');
+    }
   };
 
   const filteredUsers = users.filter(user => {
-    const matchesSearch = (
-      user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = roleFilter === 'all' || user.role === roleFilter;
     return matchesSearch && matchesRole;
   });
 
-  if (isLoading) {
-    return <div className="loading-spinner" />;
-  }
+  if (isLoading) return <LoadingSpinner />;
 
   return (
-    <div className="admin-container">
-      <div className="admin-header">
+    <div className="admin-users-container">
+      <div className="admin-users-header">
         <h1>User Management</h1>
-        <div className="filter-section">
-          <div className="search-box">
-            <input
-              type="text"
-              placeholder="Search users..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+        <div className="filters">
+          <input
+            type="text"
+            placeholder="Search users..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-input"
+          />
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
             className="role-filter"
           >
             <option value="all">All Roles</option>
-            <option value="user">Users</option>
-            <option value="organizer">Organizers</option>
-            <option value="admin">Admins</option>
+            <option value="User">User</option>
+            <option value="Organizer">Organizer</option>
+            <option value="Admin">Admin</option>
           </select>
         </div>
       </div>
 
       <div className="users-table">
         <div className="table-header">
-          <div className="col-name">Name</div>
-          <div className="col-email">Email</div>
-          <div className="col-role">Role</div>
-          <div className="col-joined">Joined</div>
-          <div className="col-actions">Actions</div>
+          <div className="header-cell">Name</div>
+          <div className="header-cell">Email</div>
+          <div className="header-cell">Role</div>
+          <div className="header-cell">Actions</div>
         </div>
-
+        
         <div className="table-body">
-          {filteredUsers.length === 0 ? (
-            <div className="no-results">
-              No users found matching your criteria
-            </div>
-          ) : (
+          {filteredUsers.length > 0 ? (
             filteredUsers.map(user => (
               <UserRow
-                key={user.id}
+                key={user._id}
                 user={user}
-                onUpdateRole={() => handleUpdateRole(user)}
-                onDelete={() => handleDeleteClick(user)}
+                onUpdateRole={() => {
+                  setSelectedUser(user);
+                  setShowRoleModal(true);
+                }}
+                onDelete={() => {
+                  setSelectedUser(user);
+                  setShowDeleteDialog(true);
+                }}
               />
             ))
+          ) : (
+            <div className="no-users">No users found</div>
           )}
         </div>
       </div>
@@ -132,17 +132,20 @@ const AdminUsersPage = () => {
       {showRoleModal && selectedUser && (
         <UpdateUserRoleModal
           user={selectedUser}
-          onClose={() => setShowRoleModal(false)}
-          onUpdate={handleRoleUpdate}
+          onClose={() => {
+            setShowRoleModal(false);
+            setSelectedUser(null);
+          }}
+          onUpdateRole={handleUpdateRole}
         />
       )}
 
       {showDeleteDialog && selectedUser && (
         <ConfirmationDialog
           title="Delete User"
-          message={`Are you sure you want to delete ${selectedUser.firstName} ${selectedUser.lastName}? This action cannot be undone.`}
+          message={`Are you sure you want to delete ${selectedUser.name}? This action cannot be undone.`}
           confirmLabel="Delete"
-          onConfirm={handleDeleteConfirm}
+          onConfirm={handleDeleteUser}
           onCancel={() => {
             setShowDeleteDialog(false);
             setSelectedUser(null);

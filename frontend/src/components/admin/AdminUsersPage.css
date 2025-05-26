@@ -1,0 +1,99 @@
+.admin-users-container {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.admin-users-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.admin-users-header h1 {
+  margin: 0;
+  color: #2d3748;
+  font-size: 2rem;
+}
+
+.filters {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.search-input {
+  padding: 0.5rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  min-width: 250px;
+  font-size: 1rem;
+}
+
+.role-filter {
+  padding: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  background-color: white;
+  font-size: 1rem;
+  min-width: 150px;
+}
+
+.users-table {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.table-header {
+  display: grid;
+  grid-template-columns: 2fr 2fr 1fr 1fr;
+  padding: 1rem;
+  background-color: #f7fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.header-cell {
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.table-body {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.no-users {
+  padding: 2rem;
+  text-align: center;
+  color: #718096;
+  font-size: 1.1rem;
+}
+
+@media (max-width: 768px) {
+  .admin-users-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filters {
+    flex-direction: column;
+  }
+
+  .search-input,
+  .role-filter {
+    width: 100%;
+  }
+
+  .table-header {
+    grid-template-columns: 2fr 2fr 1fr;
+  }
+
+  .header-cell:last-child {
+    display: none;
+  }
+} 
