@@ -1,6 +1,6 @@
-const userModel = require("../Models/userModel");
-const bookingModel = require("../Models/bookingModel");
-const eventModel = require("../Models/eventModel");
+const userModel = require("../models/userModel");
+const bookingModel = require("../models/bookingModel");
+const eventModel = require("../models/eventModel");
 
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
@@ -239,6 +239,14 @@ const userController = {
     // Placeholder implementation
     return res.status(501).json({ message: 'Not implemented yet.' });
   },
+
+  verifyResetCode: async (req, res) => {
+  return res.status(501).json({ message: 'Not implemented yet.' });
+},
+resetPassword: async (req, res) => {
+  return res.status(501).json({ message: 'Not implemented yet.' });
+},
+
   getAdminStats: async (req, res) => {
     try {
       const [users, events, bookings] = await Promise.all([
