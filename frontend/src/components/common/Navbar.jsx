@@ -31,6 +31,9 @@ const Navbar = () => {
               <Link to="/profile" className="nav-link">
                 Profile
               </Link>
+              <Link to="/bookings" className="nav-link">
+                My Bookings
+              </Link>
               
               {user.role === 'organizer' && (
                 <Link to="/my-events" className="nav-link">

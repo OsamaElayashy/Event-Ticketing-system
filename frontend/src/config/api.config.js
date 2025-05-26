@@ -29,8 +29,8 @@ export const USER_ENDPOINTS = {
 
 // Event endpoints
 export const EVENT_ENDPOINTS = {
-  ALL_EVENTS: '/events',
-  ADMIN_EVENTS: '/events/admin',
+  ALL_EVENTS: '/events/',
+  ADMIN_EVENTS: '/events/all',
   EVENT_BY_ID: (id) => `/events/${id}`,
   CREATE_EVENT: '/events',
   UPDATE_EVENT: (id) => `/events/${id}`,

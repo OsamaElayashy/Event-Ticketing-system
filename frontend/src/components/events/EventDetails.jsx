@@ -153,7 +153,7 @@ const EventDetails = () => {
                   Capacity
                 </Typography>
                 <Typography variant="body1">
-                  {event.bookedTickets} / {event.capacity} tickets booked
+                  {(event.bookedTickets ?? 0)} / {(event.capacity ?? 0)} tickets booked
                 </Typography>
               </Grid>
 
@@ -162,7 +162,7 @@ const EventDetails = () => {
                   Price
                 </Typography>
                 <Typography variant="body1">
-                  ${event.price.toFixed(2)}
+                  ${event.price !== undefined ? event.ticketPrice.toFixed(2) : 'N/A'}
                 </Typography>
               </Grid>
             </Grid>

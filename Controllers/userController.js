@@ -179,6 +179,33 @@ const userController = {
       return res.status(500).json({ message: error.message });
     }
   },
+  cancelBooking: async (req, res) => {
+    try {
+      const booking = await bookingModel.findOne({ 
+        _id: req.params.id,
+        user: req.user.userId 
+      });
+
+      if (!booking) {
+        return res.status(404).json({ message: "Booking not found" });
+      }
+
+      // Update event's remaining tickets
+      const event = await eventModel.findById(booking.event);
+      if (event) {
+        event.remainingTickets += booking.tickets;
+        await event.save();
+      }
+
+      // Update booking status
+      booking.status = 'cancelled';
+      await booking.save();
+
+      return res.status(200).json({ message: "Booking cancelled successfully" });
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  },
   getUserEvents: async (req, res) => {
     try {
       const events = await eventModel.find({ organizer: req.user.userId });

@@ -29,7 +29,8 @@ router.put("/:id", authenticate, authorizationMiddleware(["Admin"]), userControl
 router.delete("/:id", authenticate, authorizationMiddleware(["Admin"]), userController.deleteUser);
 
 // User bookings and events routes
-router.get("/bookings", authenticate, authorizationMiddleware(["User"]), userController.getUserBookings);
+router.get("/bookings", authenticate, userController.getUserBookings);
+router.delete("/bookings/:id", authenticate, userController.cancelBooking);
 router.get("/events", authenticate, authorizationMiddleware(["Organizer"]), userController.getUserEvents);
 router.get("/events/analytics", authenticate, authorizationMiddleware(["Organizer"]), userController.getUserEventAnalytics);
 

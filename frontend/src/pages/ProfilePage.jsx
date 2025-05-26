@@ -41,16 +41,16 @@ const ProfilePage = () => {
         <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
           <Box display="flex" alignItems="center" mb={4}>
             <Avatar
-              src={user.profileImage}
-              alt={user.displayName}
+              src={user.profilePicture}
+              alt={user.name || 'No Name'}
               sx={{ width: 100, height: 100, mr: 3 }}
             />
             <Box>
               <Typography variant="h4" gutterBottom>
-                {user.displayName}
+                {user.name || 'No Name'}
               </Typography>
               <Typography variant="subtitle1" color="text.secondary">
-                {user.email}
+                {user.email || 'No Email'}
               </Typography>
               {user.role && (
                 <Typography variant="body2" color="primary" sx={{ mt: 1 }}>
@@ -65,21 +65,15 @@ const ProfilePage = () => {
               Contact Information
             </Typography>
             <Box sx={{ display: 'grid', gap: 2 }}>
-              {user.phone && (
-                <Typography>
-                  <strong>Phone:</strong> {user.phone}
-                </Typography>
-              )}
-              {user.address && (
-                <Typography>
-                  <strong>Address:</strong> {user.address}
-                </Typography>
-              )}
-              {(user.city || user.country) && (
-                <Typography>
-                  <strong>Location:</strong> {[user.city, user.country].filter(Boolean).join(', ')}
-                </Typography>
-              )}
+              <Typography>
+                <strong>Phone:</strong> {user.phone || 'Not set'}
+              </Typography>
+              <Typography>
+                <strong>Address:</strong> {user.address || 'Not set'}
+              </Typography>
+              <Typography>
+                <strong>Location:</strong> {(user.city || user.country) ? [user.city, user.country].filter(Boolean).join(', ') : 'Not set'}
+              </Typography>
             </Box>
           </Box>
 

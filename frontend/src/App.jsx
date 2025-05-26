@@ -62,9 +62,14 @@ function App() {
                 </Route>
                 
                 {/* Profile Route - Accessible to all authenticated users */}
-                <Route path="/profile" element={<PrivateRoute />}>
-                  <Route index element={<ProfilePage />} />
-                </Route>
+                <Route 
+                  path="/profile" 
+                  element={
+                    <PrivateRoute>
+                      <ProfilePage />
+                    </PrivateRoute>
+                  } 
+                />
                 
                 {/* Organizer-only Routes */}
                 <Route path="/my-events" element={<PrivateRoute roles={['organizer']} />}> 
