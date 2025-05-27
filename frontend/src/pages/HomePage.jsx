@@ -12,7 +12,8 @@ import './HomePage.css';
 const HomePage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [events, setEvents] = useState([]);
+  const [allEvents, setAllEvents] = useState([]);
+  const [filteredEvents, setFilteredEvents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -21,7 +22,8 @@ const HomePage = () => {
     const fetchEvents = async () => {
       try {
         const response = await api.get(EVENT_ENDPOINTS.ALL_EVENTS);
-        setEvents(response.data);
+        setAllEvents(response.data);
+        setFilteredEvents(response.data);
       } catch (error) {
         toast.error('Failed to load events');
         console.error('Error fetching events:', error);
@@ -31,7 +33,32 @@ const HomePage = () => {
     };
 
     fetchEvents();
-  }, [searchTerm, categoryFilter]);
+  }, []);
+
+  useEffect(() => {
+    const filterEvents = () => {
+      let filtered = [...allEvents];
+
+      // Apply search filter
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        filtered = filtered.filter(event =>
+          event.title.toLowerCase().includes(searchLower) ||
+          event.description.toLowerCase().includes(searchLower) ||
+          event.location.toLowerCase().includes(searchLower)
+        );
+      }
+
+      // Apply category filter
+      if (categoryFilter !== 'all') {
+        filtered = filtered.filter(event => event.category === categoryFilter);
+      }
+
+      setFilteredEvents(filtered);
+    };
+
+    filterEvents();
+  }, [searchTerm, categoryFilter, allEvents]);
 
   const handleAddEvent = () => {
     navigate('/events/new');
@@ -81,8 +108,8 @@ const HomePage = () => {
           <LoadingSpinner />
         ) : (
           <div className="events-section">
-            {events.length > 0 ? (
-              <EventList events={events} />
+            {filteredEvents.length > 0 ? (
+              <EventList events={filteredEvents} />
             ) : (
               <div className="no-events">
                 <p>No events found</p>
