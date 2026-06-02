@@ -7,18 +7,16 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true); // Initial loading state
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Check for existing session on initial load
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
         const response = await api.get(AUTH_ENDPOINTS.CHECK_SESSION);
         setUser(response.data.user);
       } catch (error) {
-        // Session is invalid or expired
-        localStorage.removeItem('token');
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
@@ -28,101 +26,42 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    try {
-      const response = await api.post(AUTH_ENDPOINTS.LOGIN, { email, password });
-      const { user, token } = response.data;
-      setUser(user);
-      if (token) {
-        localStorage.setItem('token', token);
-      }
-      return response.data;
-    } catch (error) {
-      console.error('Login error:', error.response?.data?.message || error.message);
-      throw error;
-    }
+    const response = await api.post(AUTH_ENDPOINTS.LOGIN, { email, password });
+    const { user: loggedInUser } = response.data;
+    setUser(loggedInUser);
+    return response.data;
   };
 
   const register = async (userData) => {
-    try {
-      const response = await api.post(USER_ENDPOINTS.REGISTER, userData);
-      return response.data;
-    } catch (error) {
-      console.error('Registration error:', error.response?.data?.message || error.message);
-      throw error;
-    }
+    const response = await api.post(AUTH_ENDPOINTS.REGISTER, userData);
+    return response.data;
   };
 
   const logout = async () => {
     try {
       await api.post(AUTH_ENDPOINTS.LOGOUT);
     } catch (error) {
-      console.error('Logout error:', error);
+      // ignore
     } finally {
       setUser(null);
-      localStorage.removeItem('token');
       navigate('/login');
     }
   };
 
   const updateUserProfile = async (updateData) => {
-    try {
-      const response = await api.put(USER_ENDPOINTS.UPDATE_PROFILE, updateData);
-      const updatedUser = response.data.user;
-      setUser(updatedUser);
-      return updatedUser;
-    } catch (error) {
-      console.error('Profile update error:', error.response?.data?.message || error.message);
-      throw error;
-    }
+    const response = await api.put(USER_ENDPOINTS.UPDATE_PROFILE, updateData);
+    const updatedUser = response.data;
+    setUser(updatedUser);
+    return updatedUser;
   };
 
   const updateUser = (updatedUser) => {
     setUser(updatedUser);
   };
 
-  // Function to refresh token (optional)
-  const refreshToken = async () => {
-    try {
-      const response = await api.post(AUTH_ENDPOINTS.REFRESH_TOKEN);
-      localStorage.setItem('token', response.data.token);
-      return response.data.token;
-    } catch (error) {
-      logout();
-      throw error;
-    }
-  };
-
-  // Add axios response interceptor for token refresh (optional)
-  useEffect(() => {
-    const interceptor = api.interceptors.response.use(
-      (response) => response,
-      async (error) => {
-        const originalRequest = error.config;
-        
-        if (error.response?.status === 401 && !originalRequest._retry) {
-          originalRequest._retry = true;
-          
-          try {
-            const newToken = await refreshToken();
-            originalRequest.headers.Authorization = `Bearer ${newToken}`;
-            return api(originalRequest);
-          } catch (refreshError) {
-            logout();
-            return Promise.reject(refreshError);
-          }
-        }
-        
-        return Promise.reject(error);
-      }
-    );
-
-    return () => {
-      api.interceptors.response.eject(interceptor);
-    };
-  }, [logout, refreshToken]);
-
   const value = {
     user,
+    currentUser: user, // alias for backward compat
     isLoading,
     isAuthenticated: !!user,
     login,
@@ -130,7 +69,6 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateUser,
     updateUserProfile,
-    refreshToken
   };
 
   return (
@@ -147,3 +85,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+export { AuthContext };

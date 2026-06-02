@@ -3,7 +3,9 @@ const router = express.Router();
 const bookingsController = require('../Controllers/bookingController');
 const authenticate = require("../Middleware/authenticationMiddleware");
 
-// Standard user actions
+// * Get all bookings for the current user
+router.get("/", authenticate, bookingsController.getUserBookings);
+
 // * Book tickets for an event
 router.post("/", authenticate, bookingsController.bookTickets);
 

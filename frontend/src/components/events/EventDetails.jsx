@@ -31,28 +31,20 @@ const EventDetails = () => {
         const response = await api.get(EVENT_ENDPOINTS.EVENT_BY_ID(id));
         setEvent(response.data);
       } catch (err) {
-        console.error('Error fetching event:', err);
         setError(err.response?.data?.message || 'Failed to load event details');
       } finally {
         setLoading(false);
       }
     };
-
     fetchEvent();
   }, [id]);
 
-  const handleEdit = () => {
-    navigate(`/events/${id}/edit`);
-  };
-
   const handleDelete = async () => {
     if (!window.confirm('Are you sure you want to delete this event?')) return;
-
     try {
       await api.delete(EVENT_ENDPOINTS.DELETE_EVENT(id));
       navigate('/my-events');
     } catch (err) {
-      console.error('Error deleting event:', err);
       setError(err.response?.data?.message || 'Failed to delete event');
     }
   };
@@ -81,10 +73,11 @@ const EventDetails = () => {
     );
   }
 
-  const isOrganizer = user?.role === 'Organizer' && event.organizerId === user._id;
-  const isPastEvent = new Date(event.date) < new Date();
-  const isSoldOut = event.bookedTickets >= event.capacity;
+  const eventDate = new Date(event.Date);
+  const isPastEvent = eventDate < new Date();
+  const isSoldOut = event.remainingTickets <= 0;
   const isPending = event.status === 'pending';
+  const isOrganizer = user?.role === 'Organizer' && String(event.Organizer) === String(user._id);
 
   return (
     <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
@@ -94,32 +87,21 @@ const EventDetails = () => {
             <Typography variant="h4" gutterBottom>
               {event.title}
             </Typography>
-            
+
             <Box sx={{ mb: 2 }}>
-              <Chip 
+              <Chip
                 label={event.category.charAt(0).toUpperCase() + event.category.slice(1)}
                 color="primary"
                 sx={{ mr: 1 }}
               />
               {isPending && (
-                <Chip 
-                  label="Pending Approval"
-                  color="warning"
-                  sx={{ mr: 1 }}
-                />
+                <Chip label="Pending Approval" color="warning" sx={{ mr: 1 }} />
               )}
               {isPastEvent && (
-                <Chip 
-                  label="Past Event"
-                  color="error"
-                  sx={{ mr: 1 }}
-                />
+                <Chip label="Past Event" color="default" sx={{ mr: 1 }} />
               )}
               {isSoldOut && (
-                <Chip 
-                  label="Sold Out"
-                  color="error"
-                />
+                <Chip label="Sold Out" color="error" />
               )}
             </Box>
 
@@ -131,48 +113,38 @@ const EventDetails = () => {
 
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle1" color="text.secondary">
-                  Date & Time
-                </Typography>
+                <Typography variant="subtitle1" color="text.secondary">Date & Time</Typography>
                 <Typography variant="body1">
-                  {new Date(event.date).toLocaleDateString()} at {event.time}
+                  {eventDate.toLocaleDateString()} at {eventDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Typography>
               </Grid>
 
               <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle1" color="text.secondary">
-                  Location
-                </Typography>
+                <Typography variant="subtitle1" color="text.secondary">Location</Typography>
+                <Typography variant="body1">{event.location}</Typography>
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle1" color="text.secondary">Tickets Available</Typography>
                 <Typography variant="body1">
-                  {event.location}
+                  {event.remainingTickets} / {event.totaltickets} remaining
                 </Typography>
               </Grid>
 
               <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle1" color="text.secondary">
-                  Capacity
-                </Typography>
+                <Typography variant="subtitle1" color="text.secondary">Price</Typography>
                 <Typography variant="body1">
-                  {(event.bookedTickets ?? 0)} / {(event.capacity ?? 0)} tickets booked
-                </Typography>
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle1" color="text.secondary">
-                  Price
-                </Typography>
-                <Typography variant="body1">
-                  ${event.price !== undefined ? event.ticketPrice.toFixed(2) : 'N/A'}
+                  ${event.ticketPrice !== undefined ? Number(event.ticketPrice).toFixed(2) : 'Free'}
                 </Typography>
               </Grid>
             </Grid>
           </Grid>
 
           <Grid item xs={12} md={4}>
-            {event.imageUrl && (
+            {event.image && (
               <Box
                 component="img"
-                src={event.imageUrl}
+                src={event.image}
                 alt={event.title}
                 sx={{
                   width: '100%',
@@ -181,6 +153,7 @@ const EventDetails = () => {
                   borderRadius: 1,
                   mb: 2
                 }}
+                onError={(e) => { e.target.style.display = 'none'; }}
               />
             )}
 
@@ -189,8 +162,7 @@ const EventDetails = () => {
                 <Button
                   variant="contained"
                   fullWidth
-                  onClick={handleEdit}
-                  disabled={isPastEvent || isPending}
+                  onClick={() => navigate(`/my-events/${id}/edit`)}
                 >
                   Edit Event
                 </Button>
@@ -199,7 +171,6 @@ const EventDetails = () => {
                   color="error"
                   fullWidth
                   onClick={handleDelete}
-                  disabled={isPastEvent || isPending}
                 >
                   Delete Event
                 </Button>
@@ -213,8 +184,8 @@ const EventDetails = () => {
                 disabled={isPastEvent || isSoldOut || !user || isPending}
               >
                 {!user ? 'Login to Book' :
-                  isPending ? 'Event Pending Approval' :
-                  isPastEvent ? 'Event has ended' :
+                  isPending ? 'Pending Approval' :
+                  isPastEvent ? 'Event Ended' :
                   isSoldOut ? 'Sold Out' :
                   'Book Tickets'}
               </Button>
@@ -229,7 +200,6 @@ const EventDetails = () => {
           onClose={() => setShowBookingForm(false)}
           onSuccess={() => {
             setShowBookingForm(false);
-            // Refresh event data
             api.get(EVENT_ENDPOINTS.EVENT_BY_ID(id))
               .then(response => setEvent(response.data))
               .catch(err => console.error('Error refreshing event:', err));

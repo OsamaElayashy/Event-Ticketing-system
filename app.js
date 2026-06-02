@@ -18,6 +18,7 @@ app.use(cors({
 const authRouter = require('./Routes/auth.js');
 const userRouter = require('./Routes/user.js');
 const eventsRouter = require('./Routes/event.js');
+const bookingsRouter = require('./Routes/booking.js');
 
 // Public routes (no authentication required)
 app.use('/api/auth', authRouter);
@@ -26,6 +27,7 @@ app.use('/api/auth', authRouter);
 const authenticationMiddleware = require('./Middleware/authenticationMiddleware.js');
 app.use('/api/users', authenticationMiddleware, userRouter);
 app.use('/api/events', authenticationMiddleware, eventsRouter);
+app.use('/api/bookings', authenticationMiddleware, bookingsRouter);
 
 // Database connection
 const db_name = process.env.DB_NAME;

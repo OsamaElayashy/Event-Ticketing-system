@@ -20,8 +20,8 @@ const BookTicketForm = ({ event, onClose, onSuccess }) => {
   const [error, setError] = useState('');
   const [bookingSuccess, setBookingSuccess] = useState(false);
 
-  const availableTickets = event.capacity - event.bookedTickets;
-  const pricePerTicket = event.ticketPrice !== undefined ? event.ticketPrice : 0;
+  const availableTickets = event.remainingTickets ?? 0;
+  const pricePerTicket = Number(event.ticketPrice) || 0;
   const totalPrice = pricePerTicket * ticketCount;
 
   const handleChange = (e) => {
@@ -37,7 +37,7 @@ const BookTicketForm = ({ event, onClose, onSuccess }) => {
     try {
       await api.post(BOOKING_ENDPOINTS.CREATE_BOOKING, {
         eventId: event._id,
-        tickets: ticketCount,
+        quantity: ticketCount,
         totalPrice
       });
       setBookingSuccess(true);
@@ -53,51 +53,32 @@ const BookTicketForm = ({ event, onClose, onSuccess }) => {
     }
   };
 
-  const handleCloseDialog = () => {
-    onClose();
-  };
-
   return (
-    <Dialog open maxWidth="sm" fullWidth onClose={handleCloseDialog}>
+    <Dialog open maxWidth="sm" fullWidth onClose={onClose}>
       {loading && (
         <Box sx={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: 'rgba(255,255,255,0.7)',
-          zIndex: 1
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          backgroundColor: 'rgba(255,255,255,0.7)', zIndex: 1
         }}>
           <CircularProgress />
         </Box>
       )}
-      
+
       <DialogTitle>Book Tickets</DialogTitle>
       <DialogContent>
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         {bookingSuccess && (
           <Alert severity="success" sx={{ mb: 2 }}>
-            Booking confirmed! You'll receive a confirmation email shortly.
+            Booking confirmed!
           </Alert>
         )}
 
         <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle1" gutterBottom>
-            Event Details
-          </Typography>
+          <Typography variant="subtitle1" gutterBottom>Event</Typography>
+          <Typography variant="body2" color="text.secondary">{event.title}</Typography>
           <Typography variant="body2" color="text.secondary">
-            {event.title}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {new Date(event.date).toLocaleDateString()} at {event.time}
+            {new Date(event.Date).toLocaleDateString()}
           </Typography>
         </Box>
 
@@ -109,61 +90,30 @@ const BookTicketForm = ({ event, onClose, onSuccess }) => {
           fullWidth
           value={ticketCount}
           onChange={handleChange}
-          inputProps={{ 
-            min: 1, 
-            max: availableTickets,
-            'aria-label': 'Number of tickets'
-          }}
+          inputProps={{ min: 1, max: availableTickets }}
           helperText={`${availableTickets} tickets available`}
           disabled={bookingSuccess}
         />
 
         <Box sx={{ mt: 3 }}>
-          <Typography variant="subtitle1" gutterBottom>
-            Price Details
-          </Typography>
+          <Typography variant="subtitle1" gutterBottom>Price Details</Typography>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-            <Typography variant="body2" color="text.secondary">
-              Price per ticket
-            </Typography>
-            <Typography variant="body2">
-              ${pricePerTicket.toFixed(2)}
-            </Typography>
+            <Typography variant="body2" color="text.secondary">Price per ticket</Typography>
+            <Typography variant="body2">${pricePerTicket.toFixed(2)}</Typography>
           </Box>
           <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-            <Typography variant="subtitle1">
-              Total
-            </Typography>
-            <Typography variant="subtitle1" color="primary">
-              ${totalPrice.toFixed(2)}
-            </Typography>
+            <Typography variant="subtitle1">Total</Typography>
+            <Typography variant="subtitle1" color="primary">${totalPrice.toFixed(2)}</Typography>
           </Box>
         </Box>
       </DialogContent>
       <DialogActions>
         {bookingSuccess ? (
-          <>
-            <Button 
-              variant="outlined" 
-              onClick={() => window.print()}
-              sx={{ mr: 2 }}
-            >
-              Print Confirmation
-            </Button>
-            <Button onClick={handleCloseDialog} variant="contained">
-              Close
-            </Button>
-          </>
+          <Button onClick={onClose} variant="contained">Close</Button>
         ) : (
           <>
-            <Button onClick={handleCloseDialog} disabled={loading}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              variant="contained"
-              disabled={loading}
-            >
+            <Button onClick={onClose} disabled={loading}>Cancel</Button>
+            <Button onClick={handleSubmit} variant="contained" disabled={loading || availableTickets === 0}>
               {loading ? <CircularProgress size={24} /> : 'Confirm Booking'}
             </Button>
           </>

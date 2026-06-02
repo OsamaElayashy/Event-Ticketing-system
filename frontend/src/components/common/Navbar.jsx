@@ -31,17 +31,20 @@ const Navbar = () => {
               <Link to="/profile" className="nav-link">
                 Profile
               </Link>
-              <Link to="/bookings" className="nav-link">
-                My Bookings
-              </Link>
-              
-              {user.role === 'organizer' && (
+
+              {user.role === 'StandardUser' && (
+                <Link to="/bookings" className="nav-link">
+                  My Bookings
+                </Link>
+              )}
+
+              {user.role === 'Organizer' && (
                 <Link to="/my-events" className="nav-link">
                   My Events
                 </Link>
               )}
-              
-              {user.role === 'admin' && (
+
+              {user.role === 'Admin' && (
                 <>
                   <Link to="/admin/events" className="nav-link">
                     Admin Events

@@ -3,14 +3,19 @@ const Event = require('../models/eventModel');
 
 const bookingController = {
   getUserBookings: async (req, res) => {
-    const bookings = await Booking.find({ user: req.user.userId });
-    res.json(bookings);
+    try {
+      const bookings = await Booking.find({ user: req.user.userId }).populate('event');
+      res.json(bookings);
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
   },
 
   // bookTickets
   bookTickets: async (req, res) => {
     try {
-      const { eventId, quantity } = req.body;
+      const { eventId, quantity: qty, tickets: tix } = req.body;
+      const quantity = qty || tix;
       const event = await Event.findById(eventId);
 
       if (!event || event.status !== 'approved') {

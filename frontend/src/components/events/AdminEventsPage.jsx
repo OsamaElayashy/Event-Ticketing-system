@@ -15,28 +15,30 @@ const AdminEventsPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user?.role !== 'admin') {
+    if (user?.role !== 'Admin') {
       navigate('/unauthorized');
       return;
     }
-    const fetchEvents = async () => {
-      setLoading(true);
-      try {
-        const response = await api.get(EVENT_ENDPOINTS.ADMIN_EVENTS);
-        setEvents(response.data);
-      } catch (error) {
-        toast.error('Failed to load events');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchEvents();
   }, [user, navigate]);
 
+  const fetchEvents = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get(EVENT_ENDPOINTS.ADMIN_EVENTS);
+      setEvents(response.data);
+    } catch (error) {
+      toast.error('Failed to load events');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleApproveEvent = async (eventId) => {
     try {
-      await api.put(`/events/admin/${eventId}/approve`);
+      await api.put(EVENT_ENDPOINTS.APPROVE_EVENT(eventId));
       toast.success('Event approved successfully');
+      fetchEvents();
     } catch (error) {
       toast.error('Failed to approve event');
     }
@@ -44,8 +46,9 @@ const AdminEventsPage = () => {
 
   const handleRejectEvent = async (eventId) => {
     try {
-      await api.put(`/events/admin/${eventId}/reject`);
+      await api.put(EVENT_ENDPOINTS.REJECT_EVENT(eventId));
       toast.success('Event rejected');
+      fetchEvents();
     } catch (error) {
       toast.error('Failed to reject event');
     }
@@ -54,7 +57,16 @@ const AdminEventsPage = () => {
   return (
     <div className="admin-events-container">
       <h1>Event Management</h1>
-      {loading ? <LoadingSpinner /> : <EventList events={events} isAdmin />}
+      {loading ? (
+        <LoadingSpinner />
+      ) : (
+        <EventList
+          events={events}
+          isAdmin
+          onApprove={handleApproveEvent}
+          onReject={handleRejectEvent}
+        />
+      )}
     </div>
   );
 };

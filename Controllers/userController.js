@@ -106,10 +106,11 @@ const userController = {
         res.cookie("token", token, {
           expires: expiresAt,
           httpOnly: true,
-          secure: process.env.NODE_ENV === 'production', // Use HTTPS only in production
-          sameSite: "none",
-        })
-        return res.status(200).json({ message: "Login successful", user });
+          secure: false,
+          sameSite: "lax",
+        });
+        const { password: _pw, ...safeUser } = user.toObject();
+        return res.status(200).json({ message: "Login successful", user: safeUser });
     } catch (error) {
       console.error("Error logging in:", error);
       res.status(500).json({ message: "Server error" });

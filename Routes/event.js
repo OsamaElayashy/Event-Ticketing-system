@@ -16,7 +16,13 @@ router.get("/", eventsController.getApprovedEvents);
 // * Get a list of all events (Admin only)
 router.get("/all", authenticate, authorizationMiddleware(["Admin"]), eventsController.getAllEvents);
 
-// * Get details of a single event (Public)
+// * Approve an event (Admin only)
+router.put("/admin/:id/approve", authenticate, authorizationMiddleware(["Admin"]), eventsController.approveEvent);
+
+// * Reject an event (Admin only)
+router.put("/admin/:id/reject", authenticate, authorizationMiddleware(["Admin"]), eventsController.rejectEvent);
+
+// * Get details of a single event
 router.get("/:id", eventsController.getEvent);
 
 // * Update an event (Organizer or Admin)

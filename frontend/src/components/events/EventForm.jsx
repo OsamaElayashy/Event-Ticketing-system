@@ -150,10 +150,11 @@ const EventForm = ({ isEditing = false }) => {
       let response;
       if (isEditing) {
         response = await api.put(EVENT_ENDPOINTS.UPDATE_EVENT(id), eventData);
-        navigate(`/events/${id}`);
+        navigate(`/my-events`);
       } else {
         response = await api.post(EVENT_ENDPOINTS.CREATE_EVENT, eventData);
-        navigate(`/events/${response.data._id}`);
+        const newEventId = response.data?.newEvent?._id || response.data?._id;
+        navigate(newEventId ? `/events/${newEventId}` : '/my-events');
       }
 
       // Show success message or handle any post-creation tasks

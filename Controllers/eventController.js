@@ -93,6 +93,34 @@ const eventController = {
       res.status(500).json({ message: error.message });
     }
   },
+
+  approveEvent: async (req, res) => {
+    try {
+      const event = await eventModel.findByIdAndUpdate(
+        req.params.id,
+        { status: "approved" },
+        { new: true }
+      );
+      if (!event) return res.status(404).json({ message: "Event not found" });
+      res.status(200).json({ message: "Event approved", event });
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  },
+
+  rejectEvent: async (req, res) => {
+    try {
+      const event = await eventModel.findByIdAndUpdate(
+        req.params.id,
+        { status: "declined" },
+        { new: true }
+      );
+      if (!event) return res.status(404).json({ message: "Event not found" });
+      res.status(200).json({ message: "Event rejected", event });
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  },
 };
 
 module.exports = eventController;

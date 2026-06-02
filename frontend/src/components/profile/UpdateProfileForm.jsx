@@ -15,7 +15,7 @@ const UpdateProfileForm = ({ userData, onCancel, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
-    displayName: userData?.displayName || '',
+    displayName: userData?.name || userData?.displayName || '',
     email: userData?.email || '',
     phone: userData?.phone || '',
     address: userData?.address || '',
@@ -87,7 +87,7 @@ const UpdateProfileForm = ({ userData, onCancel, onSuccess }) => {
     try {
       // Prepare data for API
       const updateData = {
-        displayName: formData.displayName,
+        name: formData.displayName,
         email: formData.email,
         phone: formData.phone,
         address: formData.address,
